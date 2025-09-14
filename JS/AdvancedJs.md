@@ -7,17 +7,21 @@
 ### 🌱 **Basic Closure Example**
 
 ```js
-function outer() {
-  let counter = 0;
-  function inner() {
-    counter++;
-    return counter;
-  }
-  return inner;
+function taoBoDem() {
+  let count = 0;
+
+  return function () {
+    count++;
+    console.log(count);
+  };
 }
-const fn = outer();
-console.log(fn()); // 1
-console.log(fn()); // 2
+
+const demSo = taoBoDem(); // demSo bây giờ là một closure
+
+demSo(); // In ra: 1
+demSo(); // In ra: 2
+demSo(); // In ra: 3
+// Biến `count` vẫn tồn tại và được ghi nhớ giữa các lần gọi.
 ```
 
 ### 🛡️ **Applications**
@@ -81,14 +85,26 @@ console.log(double(5)); // 10
 Transform a function with multiple parameters into a sequence of functions, each taking one parameter.
 
 ```js
-function sum(a) {
-  return function (b) {
-    return function (c) {
-      return a + b + c;
+// Hàm gốc chưa được "curry" hóa
+function log(thoiGian, mucDo, thongDiep) {
+  console.log(`[${thoiGian}] [${mucDo}]: ${thongDiep}`);
+}
+
+// Hàm đã được "curry" hóa
+function curryLog(thoiGian) {
+  return function (mucDo) {
+    return function (thongDiep) {
+      console.log(`[${thoiGian}] [${mucDo}]: ${thongDiep}`);
     };
   };
 }
-console.log(sum(1)(2)(3)); // 6
+
+// Cách sử dụng:
+const logHomNay = curryLog(new Date().toLocaleDateString()); // Áp dụng một phần, tạo hàm log cho ngày hôm nay
+const logInfoHomNay = logHomNay("INFO"); // Áp dụng tiếp, tạo hàm log INFO cho hôm nay
+
+logInfoHomNay("Người dùng đã đăng nhập.");
+logInfoHomNay("Người dùng đã cập nhật hồ sơ.");
 ```
 
 ---
@@ -108,8 +124,15 @@ console.log(sum(1)(2)(3)); // 6
 | Rejected  | The action failed and returned an error           |
 
 ```js
-const p = new Promise((resolve, reject) => {
-  setTimeout(() => resolve("done!"), 1000);
+const demoPromise = new Promise((resolve, reject) => {
+  setTimeout(() => {
+    const isSuccess = true;
+    if (isSuccess) {
+      resolve("Thành công!");
+    } else {
+      reject("Thất bại!");
+    }
+  }, 1000);
 });
 ```
 
@@ -120,26 +143,37 @@ const p = new Promise((resolve, reject) => {
 - **.finally(onFinally)**: Always executed when the Promise is settled (either fulfilled or rejected).
 
 ```js
-p.then((result) => {
-  console.log(result);
-})
-  .catch((err) => {
-    console.error(err);
+demoPromise
+  .then((result) => {
+    console.log("Kết quả:", result); // Thành công!
+  })
+  .catch((error) => {
+    console.error("Lỗi:", error);
   })
   .finally(() => {
-    console.log("Finished");
+    console.log("Hoàn tất thao tác!");
   });
 ```
 
 #### 🔗 **Promise Chaining**
 
-Chain multiple asynchronous operations.
+We can chain multiple asynchronous actions by returning a Promise in a .then().
 
 ```js
-doA()
-  .then((resultA) => doB(resultA))
-  .then((resultB) => doC(resultB))
-  .catch((error) => handleError(error));
+function plus1(x) {
+  return new Promise((resolve) => {
+    setTimeout(() => resolve(x + 1), 500);
+  });
+}
+
+plus1(1)
+  .then((result) => {
+    console.log(result); // 2
+    return plus1(result);
+  })
+  .then((result) => {
+    console.log(result); // 3
+  });
 ```
 
 #### 🛠️ **Handling Multiple Promises in Parallel**
