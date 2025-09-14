@@ -1,4 +1,4 @@
-## Factory Pattern trong JavaScript
+# Factory Pattern trong JavaScript
 
 Dưới đây là thông tin **đã được xác minh** về **Factory Pattern** trong JavaScript, dựa trên các nguồn uy tín như [MDN Web Docs](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Details_of_the_Object_Model), [Refactoring Guru - Factory Method](https://refactoring.guru/design-patterns/factory-method/javascript/example), và [Addy Osmani - Learning JavaScript Design Patterns](https://addyosmani.com/resources/essentialjsdesignpatterns/book/#factorypatternjavascript).
 
