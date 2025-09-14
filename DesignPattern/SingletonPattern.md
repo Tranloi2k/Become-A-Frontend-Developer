@@ -5,6 +5,41 @@
 **Singleton Pattern** (Mẫu thiết kế Singleton) là một mẫu thiết kế thuộc nhóm creational (tạo sinh).  
 Nó đảm bảo rằng chỉ tồn tại duy nhất một instance (thể hiện) của một class hoặc object trong toàn bộ vòng đời của ứng dụng, và cung cấp một điểm truy cập toàn cục (global access point) tới instance đó.
 
+Ví dụ:
+```javascript
+class Singleton {
+    static #instance: Singleton;
+
+    private constructor() { }
+
+    public static get instance(): Singleton {
+        if (!Singleton.#instance) {
+            Singleton.#instance = new Singleton();
+        }
+        return Singleton.#instance;
+    }
+
+    public someBusinessLogic() {
+        // ...
+    }
+}
+
+function clientCode() {
+    const s1 = Singleton.instance;
+    const s2 = Singleton.instance;
+
+    if (s1 === s2) {
+        console.log(
+            'Singleton works, both variables contain the same instance.'
+        );
+    } else {
+        console.log('Singleton failed, variables contain different instances.');
+    }
+}
+
+clientCode();
+```
+
 **Nguồn:**  
 - [MDN Web Docs - Singleton pattern](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object#singleton_pattern)
 - [Refactoring Guru - Singleton](https://refactoring.guru/design-patterns/singleton/javascript/example)
