@@ -118,6 +118,7 @@ console.log(a === b); // true
 - Dễ dàng truy cập ở bất cứ đâu trong code.
 
 **Nhược điểm:**
+- Vi phạm nguyên tắc **Single Responsibility Principle** vì nó kiêm nhiệm hai trách nhiệm: Nghiệp vụ chính của class và Quản lý việc chỉ có một instance duy nhất
 - Có thể gây khó khăn cho việc kiểm thử (test) nếu singleton lưu trạng thái.
 - Gây phụ thuộc toàn cục (global dependency), dễ dẫn đến code khó bảo trì nếu lạm dụng.
 
