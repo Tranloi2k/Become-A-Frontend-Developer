@@ -59,23 +59,61 @@ const AdminPage = lazy(() => import('./AdminPage'));
 <Route path="/admin" element={<AdminPage />} />
 ```
 
-### c. Lazy Loading dữ liệu/API
+### c. Lazy Loading với Intersection Observer
 
-Chỉ gọi API hoặc tải dữ liệu khi người dùng cuộn đến cuối trang, chuyển trang, hoặc bấm nút.
+Intersection Observer API là một Web API cho phép phát hiện một phần tử (element) xuất hiện trong viewport (cửa sổ trình duyệt), từ đó thực hiện các hành động như lazy-load hình ảnh, animation, hoặc gọi API.
 
 **Ví dụ:**
 ```jsx
-function ProductList() {
-  const [products, setProducts] = useState([]);
-  const [page, setPage] = useState(1);
+
+const LazyProductList = () => {
+
+  const observer = useRef<IntersectionObserver | null>(null);
+  const lastProductRef = useRef<HTMLLIElement | null>(null);
+
+  const fetchProducts = async () => {
+    ...
+  };
 
   useEffect(() => {
-    fetch(`/api/products?page=${page}`)
-      .then(res => res.json())
-      .then(data => setProducts(prev => [...prev, ...data]));
-  }, [page]);
+    const callback = (entries: IntersectionObserverEntry[]) => {
+      if (entries[0].isIntersecting) {
+        fetchProducts();
+      }
+    };
 
-  // Khi cuộn đến cuối trang sẽ tăng page để tải thêm dữ liệu
+    observer.current = new IntersectionObserver(callback, {threshold: 1.0});
+
+    const currentRef = lastProductRef.current;
+    if (currentRef) {
+      observer.current.observe(currentRef);
+    }
+
+    return () => {
+      if (currentRef && observer.current) {
+        observer.current.unobserve(currentRef);
+      }
+    };
+  }, []);
+
+  return (
+    <>
+     <ul>
+        {products.map((product, index) => {
+          const isLastProduct = index === products.length - 1;
+          return (
+            <li key={index} ref={isLastProduct ? lastProductRef : null}>
+              {product.name}
+            </li>
+          );
+        })}
+      </ul>
+    </>
+  );
+};
+
+export default LazyProductList;
+
 }
 ```
 
