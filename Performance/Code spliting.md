@@ -24,7 +24,9 @@ Code Splitting (chia nhỏ mã nguồn) là kỹ thuật chia ứng dụng thàn
 
 ## 3. Cách sử dụng Code Splitting trong React
 
-### a. Sử dụng React.lazy và Suspense
+### a. Component Level Spliting
+
+Sử dụng React.lazy và Suspense
 
 React cung cấp `React.lazy()` để tải động component khi cần, kết hợp với `Suspense` để hiển thị UI loading.
 
@@ -46,7 +48,9 @@ function App() {
 }
 ```
 
-### b. Code splitting với React Router
+### b. Router-based Spliting
+
+Code splitting với React Router
 
 Chỉ tải từng page khi người dùng chuyển route.
 
