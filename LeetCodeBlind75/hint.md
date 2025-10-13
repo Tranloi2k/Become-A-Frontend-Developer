@@ -7,9 +7,9 @@
 > You may assume that each input would have exactly one solution, and you may not use the same element twice.
 > You can return the answer in any order.
 
-## Approach
+### Approach
 
-### Using Map (Hash Table)
+#### Using Map (Hash Table)
 
 1. Khởi tạo một Map (hay Hash Table) để lưu các giá trị đã duyệt qua và chỉ số của chúng.
 <!--
