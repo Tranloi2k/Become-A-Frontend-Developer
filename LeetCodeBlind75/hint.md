@@ -3,10 +3,6 @@
 
 ## 1. Two Sum
 
-> Given an array of integers `nums` and an integer `target`, return indices of the two numbers such that they add up to `target`.
-> You may assume that each input would have exactly one solution, and you may not use the same element twice.
-> You can return the answer in any order.
-
 ### Approach
 
 #### Using Map (Hash Table)
@@ -23,5 +19,23 @@
 - **Time:** O(n)
 - **Space:** O(n)
 
+## 121. Best Time to Buy and Sell Stock
+
+### Approach
+
+#### Using Map (Hash Table)
+
+1. The maximum profit will be found in one of the intervals that are partitioned by the minimum price points
+<!--
+Duy trì một biến minPrice (giá mua thấp nhất bạn đã thấy từ đầu đến giờ).
+Duy trì một biến maxProfit (lợi nhuận tối đa tìm được).
+Duyệt qua mảng prices một lần duy nhất. Tại mỗi price:
+Tính lợi nhuận tiềm năng nếu bán hôm nay: currentProfit = price - minPrice.
+Cập nhật maxProfit = max(maxProfit, currentProfit).
+Cập nhật minPrice = min(minPrice, price).
+-->
+### Complexity
+
+- **Time:** O(n)
 
 
