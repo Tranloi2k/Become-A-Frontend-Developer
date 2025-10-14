@@ -38,4 +38,34 @@ Cập nhật minPrice = min(minPrice, price).
 
 - **Time:** O(n)
 
+## 217. Contains Duplicate
+
+### Approach
+
+#### Using Set
+
+### Complexity
+
+- **Time:** O(n)
+
+## 238. Product of Array Except Self
+
+### Approach
+
+#### Think how you can efficiently utilize prefix and suffix products to calculate the product of all elements except self for each index
+
+### Complexity
+
+- **Time:** O(n)
+
+## 53 Maximun Subarray
+
+### Approach
+
+#### the largest sum up to the current position
+
+### Complexity
+
+- **Time:** O(n)
+
 
