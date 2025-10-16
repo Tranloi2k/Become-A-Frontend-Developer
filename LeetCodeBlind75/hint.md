@@ -68,4 +68,12 @@ Cập nhật minPrice = min(minPrice, price).
 
 - **Time:** O(n)
 
+## 153. Find Minimum in Rotated Sorted Array
 
+### Approach
+
+#### Find a way to reduce the size of the array to be processed by half after each step
+
+### Complexity
+
+- **Time:** O(log(n))
