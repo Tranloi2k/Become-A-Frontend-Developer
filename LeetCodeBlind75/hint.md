@@ -77,3 +77,23 @@ Cập nhật minPrice = min(minPrice, price).
 ### Complexity
 
 - **Time:** O(log(n))
+
+## 15. 3Sum
+
+### Approach
+
+#### sắp xếp -> duyệt chọn 1 số làm fixed -> dùng hai con trỏ tìm hai số còn lại -> skip duplicates -> pruning khi nums[i] > 0.
+
+### Complexity
+
+- **Time:** O(n^2)
+
+## 11. Container With Most Water
+
+### Approach
+
+#### Try to use two-pointers. Set one pointer to the left and one to the right of the array. Always move the pointer that points to the lower line.
+
+### Complexity
+
+- **Time:** O(n)
