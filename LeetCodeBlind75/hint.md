@@ -97,3 +97,23 @@ Cập nhật minPrice = min(minPrice, price).
 ### Complexity
 
 - **Time:** O(n)
+
+## 3. Longest Substring Without Repeating Characters
+
+### Approach
+
+#### Generate all possible substrings & check for each substring if it's valid and keep updating maxLen accordingly.
+
+### Complexity
+
+- **Time:** O(n)
+
+## 438. Find All Anagrams in a String
+
+### Approach
+
+#### sliding window + charcode
+
+### Complexity
+
+- **Time:** O(n)
