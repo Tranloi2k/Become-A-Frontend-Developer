@@ -142,7 +142,7 @@ Cập nhật minPrice = min(minPrice, price).
 
 ### Approach
 
-#### 2 pointer
+#### 2 pointer; should consider possible pralindrome length at each position
 
 ### Complexity
 
