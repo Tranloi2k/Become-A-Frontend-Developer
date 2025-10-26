@@ -117,3 +117,34 @@ Cập nhật minPrice = min(minPrice, price).
 ### Complexity
 
 - **Time:** O(n)
+
+## 76. Minimum Window Substring
+
+### Approach
+
+#### sliding window + charcode
+
+### Complexity
+
+- **Time:** O(n)
+
+## 49. Group Anagrams
+
+### Approach
+
+#### create signature then use Map
+
+### Complexity
+
+- **Time:** O(n)
+
+## 5. Longest Palindromic Substring
+
+### Approach
+
+#### 2 pointer
+
+### Complexity
+
+- **Time:** O(n)
+
