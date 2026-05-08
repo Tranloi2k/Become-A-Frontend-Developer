@@ -4,7 +4,7 @@ SEO (Search Engine Optimization) là tập hợp các kỹ thuật giúp công c
 
 Trong phần tiếp theo, chúng ta sẽ đi chi tiết từng khía cạnh: cấu trúc HTML/meta, dữ liệu có cấu trúc (JSON-LD), robots/sitemap, hiệu năng, khả năng truy cập (accessibility).
 
-```mermaid
+```
 graph LR
   A[Robots.txt & Sitemap] -->|Xác định| B[URL được phép và ưu tiên]
   B --> C[Tải trang (Fetch)]
