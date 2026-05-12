@@ -1,0 +1,97 @@
+---
+title: Explain server-side rendering of React applications and its benefits
+---
+
+## TL;DR
+
+Server-side rendering (SSR) in React involves rendering React components on the server and sending the resulting HTML to the client. The browser displays that HTML immediately, then `hydrateRoot` attaches event handlers so the page becomes interactive. Modern React supports streaming SSR via `renderToPipeableStream` (Node) and `renderToReadableStream` (Web), and React Server Components let parts of the tree render only on the server. Benefits include faster perceived loads and better SEO; tradeoffs include a slower TTFB, the cost of hydration, and the risk of hydration mismatches.
+
+---
+
+## What is server-side rendering of React applications?
+
+### Definition
+
+Server-side rendering (SSR) is a technique where the server renders the initial HTML of a React application and sends it to the client. This is in contrast to client-side rendering (CSR), where the browser downloads a minimal HTML page and renders the content using JavaScript.
+
+### How it works
+
+1. **Initial request**: When a user requests a page, the server processes the request.
+2. **Rendering on the server**: The server uses React's server APIs (`renderToPipeableStream` on Node, `renderToReadableStream` on Web/edge runtimes) to render components into HTML.
+3. **Sending HTML to the client**: The server streams the HTML to the client. With streaming SSR, the browser can start parsing and painting before the whole page is ready.
+4. **Hydration**: Once the JavaScript bundle loads, the client calls `hydrateRoot` to attach event handlers to the existing DOM and resume React on the client. With selective hydration, React can hydrate parts of the tree as they become ready and prioritize the part the user is interacting with.
+
+### Streaming SSR and React Server Components
+
+Modern React provides two streaming server APIs:
+
+- `renderToPipeableStream` for Node.js streams.
+- `renderToReadableStream` for Web Streams (used in edge and worker runtimes).
+
+Both let you wrap parts of the tree in `<Suspense>` so the server can flush the shell first and stream the slow parts in as their data resolves.
+
+React Server Components (RSC) take this further: components marked as server-only never ship to the client and can fetch data directly. Components that need state, effects, or browser APIs are marked with the `'use client'` directive at the top of the file, defining a "client boundary". Frameworks like Next.js (App Router) and Remix build on these primitives.
+
+### Code example
+
+Here is a basic example using Next.js's App Router, which uses async server components by default:
+
+```jsx
+// app/page.jsx — a Server Component (no 'use client' directive)
+async function fetchDataFromAPI() {
+  const res = await fetch("https://api.example.com/data", {
+    // Opt into per-request rendering (SSR). Omit for static generation.
+    cache: "no-store",
+  });
+  return res.json();
+}
+
+export default async function Home() {
+  const data = await fetchDataFromAPI();
+
+  return (
+    <div>
+      <h1>Welcome to my SSR React app</h1>
+      <p>Data from server: {data.message}</p>
+    </div>
+  );
+}
+```
+
+Any interactive piece (e.g. a button with `onClick`) would live in a separate file that starts with `'use client'`.
+
+### Hydration cost and mismatches
+
+Hydration is not free. The browser has to download, parse, and execute the JS bundle, then walk the DOM and attach handlers. For large apps this can delay Time To Interactive even though pixels appeared quickly.
+
+Hydration mismatches occur when the HTML produced on the server does not match what React renders on the client during hydration — for example, rendering `new Date().toLocaleString()` or `Math.random()` on both sides, or branching on `window`. React 19 logs detailed diffs and recovers by re-rendering the mismatched subtree on the client; the fix is usually to gate browser-only output behind `useEffect` or a `<ClientOnly>` boundary.
+
+## Benefits of server-side rendering
+
+### Improved initial load time
+
+- **Faster content display**: Since the server sends fully rendered HTML, users see the content faster compared to CSR, where the browser has to download and execute JavaScript before rendering.
+
+### Better SEO
+
+- **Search engine indexing**: Search engines can easily index the fully rendered HTML, improving the SEO of your application. This is particularly important for content-heavy sites.
+
+### Performance on slower devices
+
+- **Less client-side rendering work**: SSR (and especially RSC) shifts work to the server, so low-powered devices have less HTML to construct from JavaScript. The JS still has to download and hydrate, but the first paint does not depend on it.
+
+## Tradeoffs to be aware of
+
+- **Higher TTFB**: Time To First Byte goes up because the server has to render before responding. Streaming SSR mitigates this by flushing the shell early, but the server is still doing work CSR pushes to the client.
+- **Hydration cost**: Interactive readiness is bounded by how fast the JS bundle downloads, parses, and hydrates. Big bundles delay TTI even when pixels appear quickly.
+- **Hydration mismatches**: Server and client output must agree, which constrains how you read time, randomness, and browser-only APIs during render.
+- **Server cost and complexity**: You need a Node/edge runtime to render on every request, plus caching strategy for hot pages. Static generation or ISR may be a better fit for content that does not change per request.
+
+## Further reading
+
+- [Next.js documentation](https://nextjs.org/docs)
+- [React Server Components](https://react.dev/reference/rsc/server-components)
+- [`renderToPipeableStream`](https://react.dev/reference/react-dom/server/renderToPipeableStream)
+- [`renderToReadableStream`](https://react.dev/reference/react-dom/server/renderToReadableStream)
+- [`hydrateRoot`](https://react.dev/reference/react-dom/client/hydrateRoot)
+- [`'use client'` directive](https://react.dev/reference/rsc/use-client)

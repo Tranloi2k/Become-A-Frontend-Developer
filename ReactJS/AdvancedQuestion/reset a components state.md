@@ -1,0 +1,147 @@
+---
+title: How do you reset a component's state in React?
+---
+
+## TL;DR
+
+The most idiomatic way to reset a component's state in React is to give the component a `key` prop and change it — React unmounts the old instance and mounts a fresh one with brand-new state. For finer-grained resets, call your `useState` setter with the initial value, or dispatch a `RESET` action when using `useReducer`.
+
+```javascript
+// Force a full reset by changing the key
+<Form key={formId} />;
+
+// Or reset specific state in place
+setState(initialState);
+```
+
+---
+
+## How do you reset a component's state in React?
+
+### Resetting state with a `key` prop (recommended)
+
+The canonical React-recommended pattern is to pass a different `key` to the component you want to reset. When the `key` changes, React treats it as a new component, throws away the old state, refs, and effects, and mounts a fresh instance. This works for any state inside the subtree without the component having to know it's being reset.
+
+```javascript
+import { useState } from "react";
+
+function Form() {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  return (
+    <>
+      <input value={name} onChange={(e) => setName(e.target.value)} />
+      <input value={email} onChange={(e) => setEmail(e.target.value)} />
+    </>
+  );
+}
+
+export default function App() {
+  const [version, setVersion] = useState(0);
+  return (
+    <>
+      <Form key={version} />
+      <button onClick={() => setVersion((v) => v + 1)}>Reset form</button>
+    </>
+  );
+}
+```
+
+This is the same pattern React uses to reset state when switching between items in a list — give each item a stable `key` and React handles the rest.
+
+### Resetting `useState` in place
+
+If you don't need to remount the component, store the initial value and pass it back to the setter. This is fine for small amounts of state but doesn't reset descendant components or refs.
+
+```javascript
+import { useState } from "react";
+
+const initialState = { count: 0, text: "" };
+
+function MyComponent() {
+  const [state, setState] = useState(initialState);
+
+  const resetState = () => setState(initialState);
+
+  return (
+    <div>
+      <p>Count: {state.count}</p>
+      <p>Text: {state.text}</p>
+      <button onClick={resetState}>Reset</button>
+    </div>
+  );
+}
+```
+
+### Resetting `useReducer` with a RESET action
+
+When state is managed by a reducer, the conventional approach is to handle a `RESET` action that returns the initial state. Keep `initialState` defined outside the component so the reducer and the component share the same source of truth.
+
+```javascript
+import { useReducer } from "react";
+
+const initialState = { count: 0, text: "" };
+
+function reducer(state, action) {
+  switch (action.type) {
+    case "increment":
+      return { ...state, count: state.count + 1 };
+    case "setText":
+      return { ...state, text: action.value };
+    case "reset":
+      return initialState;
+    default:
+      return state;
+  }
+}
+
+function MyComponent() {
+  const [state, dispatch] = useReducer(reducer, initialState);
+  return (
+    <>
+      <button onClick={() => dispatch({ type: "reset" })}>Reset</button>
+    </>
+  );
+}
+```
+
+### Lazy initializer for derived initial state
+
+If computing the initial state is expensive or depends on props, pass a function to `useState` (or the third argument to `useReducer`). The initializer runs only on the first render, so re-renders don't recompute it.
+
+```javascript
+import { useState } from "react";
+
+function MyComponent({ initialCount }) {
+  // The function runs once, on mount. To reset later, call the setter with a
+  // freshly computed value.
+  const [state, setState] = useState(() => ({
+    count: initialCount,
+    text: "",
+  }));
+
+  const resetState = () => setState({ count: initialCount, text: "" });
+
+  return <button onClick={resetState}>Reset</button>;
+}
+```
+
+For `useReducer`, pass `(initialArg, init)` to do the same:
+
+```javascript
+const [state, dispatch] = useReducer(reducer, initialCount, (count) => ({
+  count,
+  text: "",
+}));
+```
+
+### A note on class components
+
+Class components are no longer the recommended way to write React code in 2026 — function components with hooks (and the `key` reset pattern above) cover every case. If you're maintaining legacy code, you can reset class state by calling `this.setState(this.initialState)`, but new code should use hooks.
+
+## Further reading
+
+- [React useState Hook](https://react.dev/reference/react/useState)
+- [React useReducer Hook](https://react.dev/reference/react/useReducer)
+- [Resetting state with a key (React docs)](https://react.dev/learn/preserving-and-resetting-state#resetting-state-with-a-key)
+- [State: A component's memory](https://react.dev/learn/state-a-components-memory)

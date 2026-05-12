@@ -1,0 +1,225 @@
+---
+title: How do you decide between using React state, context, and external state managers?
+---
+
+## TL;DR
+
+Match the tool to the kind of state. Use `useState`/`useReducer` for local component state, and lift state up before reaching for anything heavier. Use React Context to pass values that change rarely (theme, locale, current user) — Context is **not** a state manager and re-renders all consumers on every change. Reach for a client-state library like Zustand, Jotai, or Redux Toolkit when many unrelated components need to share frequently-changing state. Critically, treat **server state separately**: TanStack Query, SWR, or RTK Query handle caching, refetching, and invalidation far better than any general-purpose store.
+
+---
+
+## Deciding between React state, context, and external state managers
+
+### React state (`useState` and `useReducer`)
+
+React's built-in hooks cover the majority of real-world state needs. Start here and only escalate when you have a concrete problem to solve.
+
+- Use **`useState`** for simple, independent values (a toggle, an input value, a counter).
+- Use **`useReducer`** when several state fields update together, when the next state depends on the previous state in complex ways, or when you want all transitions described in one place. It also pairs well with Context for app-scoped state that doesn't change often.
+
+#### When to use React state
+
+- The state is only relevant to one component or a small subtree
+- The state can be lifted to the closest common ancestor without prop-drilling getting painful
+- You don't need cross-tree access, persistence, or devtools
+
+#### Example
+
+```jsx
+import { useState, useReducer } from "react";
+
+function Counter() {
+  const [count, setCount] = useState(0);
+  return <button onClick={() => setCount((c) => c + 1)}>Count: {count}</button>;
+}
+
+function reducer(state, action) {
+  switch (action.type) {
+    case "add":
+      return { items: [...state.items, action.item] };
+    case "remove":
+      return { items: state.items.filter((i) => i.id !== action.id) };
+    default:
+      return state;
+  }
+}
+
+function Cart() {
+  const [state, dispatch] = useReducer(reducer, { items: [] });
+  // ...
+}
+```
+
+### React Context
+
+Context is a **dependency-injection mechanism**, not a state manager. It lets you read a value from anywhere in the tree without prop-drilling, but it does not optimize re-renders: every consumer re-renders whenever the provider's `value` changes (by `Object.is`). Putting frequently-changing state into a single context turns it into a global re-render bus.
+
+Use Context for values that change rarely or only at well-defined boundaries — theme, locale, current user, feature flags — and pair it with `useReducer` for slow-moving app state. For high-frequency state shared across the tree, prefer a real store (Zustand, Jotai, Redux Toolkit).
+
+In React 19, you can call `Provider` directly on the context (`<ThemeContext>` instead of `<ThemeContext.Provider>`) and read a context conditionally with the new `use(Context)` API:
+
+```jsx
+import { createContext, use, useState } from "react";
+
+const ThemeContext = createContext(null);
+
+function ThemeProvider({ children }) {
+  const [theme, setTheme] = useState("light");
+  // React 19: <Context> works as a Provider directly
+  return <ThemeContext value={{ theme, setTheme }}>{children}</ThemeContext>;
+}
+
+function ThemedButton({ enabled }) {
+  if (!enabled) return null;
+  // `use` can be called conditionally; `useContext` cannot
+  const { theme, setTheme } = use(ThemeContext);
+  return (
+    <button onClick={() => setTheme(theme === "light" ? "dark" : "light")}>
+      Theme: {theme}
+    </button>
+  );
+}
+```
+
+#### When to use Context
+
+- Passing rarely-changing values (theme, locale, current user, router) deep into the tree
+- Avoiding prop-drilling for a value the whole subtree needs
+- Combined with `useReducer` for app-scoped settings
+
+#### When NOT to use Context
+
+- High-frequency updates (form input on every keystroke, animation state)
+- Independent slices that should not re-render each other — split into multiple contexts or use a store with selectors
+
+### External client-state libraries
+
+When many unrelated components need to read and write the same frequently-changing client state, an external store gives you fine-grained subscriptions (only consumers of a changed slice re-render), middleware, devtools, and persistence.
+
+- **Zustand** — minimal, hook-based store, no provider required. Great default for most apps.
+- **Jotai** — atomic, bottom-up model where each piece of state is an atom; consumers only re-render when an atom they read changes.
+- **Redux Toolkit (RTK)** — the modern, batteries-included Redux. The legacy `createStore` from `redux` is deprecated; use `configureStore` + `createSlice`. RTK includes Redux DevTools (which support time-travel debugging) and pairs with **RTK Query** for server state.
+- **MobX** — observable/reactive model, popular in some enterprise codebases.
+- _Recoil_ is no longer actively maintained by Meta — new projects should pick Jotai or Zustand instead.
+
+#### When to use an external store
+
+- Many unrelated components share the same updates and Context causes too many re-renders
+- You need devtools, middleware (logging, persistence, undo/redo), or strict action-based update flows
+- State needs to live outside the React tree (e.g. accessed from a non-React module)
+
+#### Example with Redux Toolkit
+
+```jsx
+// counterSlice.js
+import { createSlice } from "@reduxjs/toolkit";
+
+const counterSlice = createSlice({
+  name: "counter",
+  initialState: { count: 0 },
+  reducers: {
+    increment: (state) => {
+      state.count += 1; // RTK uses Immer, so direct mutation is fine
+    },
+  },
+});
+
+export const { increment } = counterSlice.actions;
+export default counterSlice.reducer;
+
+// store.js
+import { configureStore } from "@reduxjs/toolkit";
+import counterReducer from "./counterSlice";
+
+export const store = configureStore({
+  reducer: { counter: counterReducer },
+});
+
+// Counter.js
+import { useSelector, useDispatch } from "react-redux";
+import { increment } from "./counterSlice";
+
+function Counter() {
+  const count = useSelector((state) => state.counter.count);
+  const dispatch = useDispatch();
+  return <button onClick={() => dispatch(increment())}>Count: {count}</button>;
+}
+
+// App.js
+import { Provider } from "react-redux";
+import { store } from "./store";
+
+function App() {
+  return (
+    <Provider store={store}>
+      <Counter />
+    </Provider>
+  );
+}
+```
+
+#### Example with Zustand
+
+```jsx
+import { create } from "zustand";
+
+const useCounter = create((set) => ({
+  count: 0,
+  increment: () => set((s) => ({ count: s.count + 1 })),
+}));
+
+function Counter() {
+  const count = useCounter((s) => s.count);
+  const increment = useCounter((s) => s.increment);
+  return <button onClick={increment}>Count: {count}</button>;
+}
+```
+
+### Server state vs client state
+
+A critical modern decision axis: data fetched from a server is **not** ordinary client state. It has a cache, can go stale, needs revalidation, refetching on focus, deduplication, retries, and pagination. Hand-rolling all of this on top of `useState` or Redux is error-prone.
+
+Use a dedicated server-state library for anything you `fetch`:
+
+- **TanStack Query** (formerly React Query) — the de facto standard.
+- **SWR** — lightweight alternative from Vercel.
+- **RTK Query** — built into Redux Toolkit, integrates with the same store.
+
+This typically shrinks your client store dramatically: most "global state" turns out to be server state in disguise.
+
+```jsx
+import { useQuery } from "@tanstack/react-query";
+
+function Profile({ id }) {
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["user", id],
+    queryFn: () => fetch(`/api/users/${id}`).then((r) => r.json()),
+  });
+  if (isLoading) return <Spinner />;
+  if (error) return <Error error={error} />;
+  return <h1>{data.name}</h1>;
+}
+```
+
+### Quick decision guide
+
+| Situation                                          | Use                                                  |
+| -------------------------------------------------- | ---------------------------------------------------- |
+| State used by one component                        | `useState`                                           |
+| Several related fields, complex transitions        | `useReducer`                                         |
+| Same value needed deep in the tree, changes rarely | Context (+ `useReducer` if needed)                   |
+| Frequently-changing client state shared widely     | Zustand / Jotai / Redux Toolkit                      |
+| Data fetched from a server                         | TanStack Query / SWR / RTK Query                     |
+| Form state                                         | React Hook Form / TanStack Form                      |
+| URL-driven state (filters, tabs)                   | Router search params (e.g. TanStack Router, Next.js) |
+
+## Further reading
+
+- [React Docs: state](https://react.dev/learn/state-a-components-memory)
+- [React Docs: passing data deeply with context](https://react.dev/learn/passing-data-deeply-with-context)
+- [React Docs: `use`](https://react.dev/reference/react/use)
+- [Redux Toolkit](https://redux-toolkit.js.org/)
+- [Zustand](https://zustand-demo.pmnd.rs/)
+- [Jotai](https://jotai.org/)
+- [TanStack Query](https://tanstack.com/query/latest)
+- [SWR](https://swr.vercel.app/)

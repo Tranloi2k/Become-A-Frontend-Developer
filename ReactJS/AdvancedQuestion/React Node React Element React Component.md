@@ -1,0 +1,86 @@
+---
+title: What is the difference between React Node, React Element, and a React Component?
+---
+
+## TL;DR
+
+A **React Node** is anything React can render: a React Element, a string, a number, an array of nodes, a fragment, a portal, `null`, `undefined`, `false`, or `true`. A **React Element** is the immutable plain object React produces from JSX or `React.createElement` describing what to render. A **React Component** is a function (or, historically, a class) that accepts props and returns React Nodes. Elements describe the UI; components are the factories that produce those elements.
+
+---
+
+## React node
+
+A **React Node** is anything that can appear in a JSX child position. The set includes:
+
+- React Elements (e.g. `<div />`, `<MyComponent />`)
+- Strings and numbers (rendered as text)
+- Arrays of React Nodes (commonly produced by `.map(...)`)
+- Fragments (`<>...</>` or `<React.Fragment>`)
+- Portals (created with `createPortal`)
+- `null`, `undefined`, `false`, and `true` — these are valid nodes that **render nothing** (they are skipped, not converted to text)
+
+```jsx
+const stringNode = "Hello, world!";
+const numberNode = 123;
+const arrayNode = [<li key="a">a</li>, <li key="b">b</li>];
+const fragmentNode = (
+  <>
+    <span>one</span>
+    <span>two</span>
+  </>
+);
+const nothingNode = null; // also: undefined, false, true — render nothing
+const elementNode = <div>Hello, world!</div>;
+```
+
+This is why `condition && <Thing />` works: when `condition` is `false`, the child is just a node that renders nothing.
+
+## React element
+
+A **React Element** is an immutable, plain JavaScript object that describes what should appear on screen. It includes a `type` (a string for host elements like `'div'`, or a component reference), `props` (including `children`), and a `key`. JSX is sugar for `React.createElement` (or, with the modern JSX transform, `react/jsx-runtime`'s `jsx` function), which produces these objects.
+
+```jsx
+const element = <div className="greeting">Hello, world!</div>;
+
+// Roughly equivalent to:
+const sameElement = React.createElement(
+  "div",
+  { className: "greeting" },
+  "Hello, world!",
+);
+```
+
+Internally each element carries a `$$typeof` symbol (`Symbol.for('react.element')` / `'react.transitional.element'` in newer versions) that React and serializers use to recognise a real element and prevent injection attacks from JSON. Elements are cheap to create and are throwaway descriptions — React diffs them against the previous tree and updates the actual DOM.
+
+## React component
+
+A **React Component** accepts inputs (props) and returns React Nodes that describe the UI. Component names are conventionally **PascalCase** so JSX can distinguish them from host elements (`<button>` is a DOM element; `<Button>` is a component).
+
+- **Function components** are the standard form. They are plain functions of `props` that return a node:
+
+  ```jsx
+  function Welcome({ name }) {
+    return <h1>Hello, {name}</h1>;
+  }
+  ```
+
+  Hooks (`useState`, `useEffect`, `useMemo`, etc.) cover what used to require a class.
+
+- **Class components** still work but are legacy in React 19 — there are no new class-only features, the legacy lifecycles (`componentWillMount`, `componentWillReceiveProps`, `componentWillUpdate`) and string refs are gone, and new APIs (Hooks, Server Components, the React Compiler) target functions only. Prefer functions for new code.
+
+  ```jsx
+  class Welcome extends React.Component {
+    render() {
+      return <h1>Hello, {this.props.name}</h1>;
+    }
+  }
+  ```
+
+The mental model: a **component** is a recipe, an **element** is a single dish made from that recipe, and a **node** is anything React is willing to plate up — including "nothing."
+
+## Further reading
+
+- [React documentation: Render and commit](https://react.dev/learn/render-and-commit)
+- [React documentation: Passing Props to a Component](https://react.dev/learn/passing-props-to-a-component)
+- [React documentation: Writing Markup with JSX](https://react.dev/learn/writing-markup-with-jsx)
+- [React documentation: Your First Component](https://react.dev/learn/your-first-component)

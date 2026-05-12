@@ -1,0 +1,141 @@
+---
+title: What is the difference between `useEffect` and `useLayoutEffect` in React?
+---
+
+## TL;DR
+
+Both hooks run side effects after render, but they differ in **when** they fire relative to paint:
+
+- `useEffect` runs **asynchronously after the browser has painted**. It does not block the user from seeing the new frame. Use it for data fetching, subscriptions, logging, and most side effects.
+- `useLayoutEffect` runs **synchronously during the commit phase, after DOM mutations but before the browser paints**. It blocks paint, so use it only when you need to measure the DOM and write to it in the same frame to avoid a visual flicker.
+
+Both accept a dependency array with the same semantics, both fire twice on mount in Strict Mode development builds, and `useLayoutEffect` has no effect during server rendering (React warns if you use it in SSR).
+
+Code example:
+
+```jsx
+import { useEffect, useLayoutEffect, useRef } from "react";
+
+function Example() {
+  const ref = useRef(null);
+
+  useEffect(() => {
+    console.log("useEffect: runs after paint");
+  }, []);
+
+  useLayoutEffect(() => {
+    console.log("useLayoutEffect: runs before paint");
+    console.log("Element width:", ref.current.offsetWidth);
+  }, []);
+
+  return <div ref={ref}>Hello</div>;
+}
+```
+
+---
+
+## What is `useEffect`?
+
+`useEffect` schedules a side effect to run **after** React commits changes to the DOM **and the browser has painted**. It is non-blocking — the user sees the new frame first, then the effect runs.
+
+- It is the right default for data fetching, subscriptions, event listeners, and logging.
+- The dependency array controls when it re-fires: `[a, b]` means "after any render where `a` or `b` changed (by `Object.is`)"; `[]` means "only after mount"; omitting the array means "after every render."
+- In Strict Mode during development, React mounts, unmounts, and remounts each component once, so effects (and their cleanup) fire twice. This surfaces missing cleanup logic. Production runs each effect once.
+
+### Code example
+
+```jsx
+import { useEffect } from "react";
+
+function Example() {
+  useEffect(() => {
+    console.log("Mounted");
+    return () => console.log("Cleanup on unmount");
+  }, []); // [] deps: cleanup runs only on unmount
+
+  return <div>Hello, World!</div>;
+}
+```
+
+With `[]` deps, the cleanup runs only when the component unmounts. With non-empty deps like `[userId]`, the cleanup runs before the next effect fires (when `userId` changes) and again on unmount.
+
+### Common use cases
+
+- Fetching data from an API
+- Setting up subscriptions (e.g., WebSocket connections)
+- Logging or analytics tracking
+- Adding and removing event listeners that do not affect layout
+
+## What is `useLayoutEffect`?
+
+`useLayoutEffect` runs **synchronously during the commit phase**, after React has written to the DOM but **before the browser paints**. Because it blocks paint, anything you do inside it delays the first visible frame — but in return you can measure the just-committed DOM and make adjustments atomically, with no flicker.
+
+- Use it when you need to read layout (e.g. `getBoundingClientRect`, `offsetWidth`) and then synchronously set state or style so the user never sees the "wrong" frame.
+- Keep the body cheap — expensive work here stalls paint.
+- During **server rendering** it does nothing (there is no layout to measure) and React logs a warning if you schedule one. Either gate it behind a client check or reach for `useEffect` instead. For libraries that need to pick one based on environment, `useInsertionEffect` (see below) or a `useIsomorphicLayoutEffect` pattern is common.
+
+### Code example
+
+```jsx
+import { useLayoutEffect, useRef, useState } from "react";
+
+function Tooltip({ children }) {
+  const ref = useRef(null);
+  const [height, setHeight] = useState(0);
+
+  useLayoutEffect(() => {
+    // Measure and commit the height before the user sees a frame
+    setHeight(ref.current.getBoundingClientRect().height);
+  }, []);
+
+  return (
+    <div ref={ref} style={{ marginTop: -height }}>
+      {children}
+    </div>
+  );
+}
+```
+
+### Common use cases
+
+- Measuring a DOM node and writing back state/style in the same frame
+- Positioning tooltips, popovers, or floating elements based on layout
+- Fixing flicker caused by a measure-then-correct pattern
+
+## `useInsertionEffect`
+
+`useInsertionEffect` fires **even earlier** than `useLayoutEffect` — before React makes any DOM mutations. It exists for CSS-in-JS libraries that need to inject `<style>` tags before layout effects read them. Application code should almost never use it; reach for `useEffect` or `useLayoutEffect` first.
+
+## Dependency arrays and the exhaustive-deps lint rule
+
+Both hooks take a dependency array with the same rules. React compares each entry to the previous render with `Object.is` and re-runs the effect (after running the previous cleanup) when any of them changed. The `react-hooks/exhaustive-deps` ESLint rule flags missing dependencies and is considered required in most React codebases — silencing it usually hides a stale-closure bug. If a value would make the effect re-run too often, the fix is usually to move it inside the effect, memoize it, or convert it to a ref, not to omit it.
+
+## Key differences between `useEffect` and `useLayoutEffect`
+
+### Timing
+
+- `useEffect`: Fires asynchronously **after** the browser paints.
+- `useLayoutEffect`: Fires synchronously during commit, **before** the browser paints.
+
+### Blocking behavior
+
+- `useEffect`: Non-blocking. Users see the new frame immediately.
+- `useLayoutEffect`: Blocks paint. The browser cannot repaint until the effect (and any resulting state update) has settled.
+
+### SSR behavior
+
+- `useEffect`: Skipped on the server (client runs it after hydration).
+- `useLayoutEffect`: No-ops on the server and warns; avoid it in isomorphic code or gate it on `typeof window !== 'undefined'`.
+
+### Use case examples
+
+- `useEffect`: fetching data, subscriptions, logging, most event listeners.
+- `useLayoutEffect`: measuring and adjusting the DOM in the same frame to prevent flicker.
+
+## Further reading
+
+- [React documentation: `useEffect`](https://react.dev/reference/react/useEffect)
+- [React documentation: `useLayoutEffect`](https://react.dev/reference/react/useLayoutEffect)
+- [React documentation: `useInsertionEffect`](https://react.dev/reference/react/useInsertionEffect)
+- [React documentation: You might not need an effect](https://react.dev/learn/you-might-not-need-an-effect)
+- [Differences between `useEffect` and `useLayoutEffect`](https://kentcdodds.com/blog/useeffect-vs-uselayouteffect)

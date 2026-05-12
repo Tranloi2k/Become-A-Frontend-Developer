@@ -1,0 +1,265 @@
+---
+title: How do you localize React applications?
+---
+
+## TL;DR
+
+To localize a React application, you typically use a library like `react-i18next` or `react-intl`. First, you set up your translation files for different languages. Then, you configure the localization library in your React app. Finally, you use the provided hooks or components to display localized text in your components.
+
+```javascript
+// Example using react-i18next
+import { useTranslation } from "react-i18next";
+
+const MyComponent = () => {
+  const { t } = useTranslation();
+  return <p>{t("welcome_message")}</p>;
+};
+```
+
+---
+
+## Setting up localization in React
+
+### Choosing a localization library
+
+There are several libraries available for localizing React applications, with `react-i18next` and `react-intl` being among the most popular. For this guide, we'll focus on `react-i18next`.
+
+### Installing the library
+
+First, install the necessary packages:
+
+```bash
+npm install i18next react-i18next
+```
+
+### Setting up translation files
+
+Create JSON files for each language you want to support. For example, create `en.json` and `fr.json` in a `locales` directory:
+
+```json
+// locales/en.json
+{
+  "welcome_message": "Welcome to our application!"
+}
+```
+
+```json
+// locales/fr.json
+{
+  "welcome_message": "Bienvenue dans notre application!"
+}
+```
+
+### Configuring the localization library
+
+Set up `i18next` and `react-i18next` in your application. Create an `i18n.js` file for the configuration:
+
+```javascript
+// i18n.js
+import i18n from "i18next";
+import { initReactI18next } from "react-i18next";
+import en from "./locales/en.json";
+import fr from "./locales/fr.json";
+
+i18n.use(initReactI18next).init({
+  resources: {
+    en: { translation: en },
+    fr: { translation: fr },
+  },
+  lng: "en", // default language
+  fallbackLng: "en",
+  interpolation: {
+    escapeValue: false, // React is safe from XSS by default — it escapes string children. Only `dangerouslySetInnerHTML` bypasses that, so don't pass translated HTML through it without sanitization.
+  },
+});
+
+export default i18n;
+```
+
+### Integrating with your React application
+
+Because `initReactI18next` already registers the i18n instance with React, you no longer need to wrap your tree in `I18nextProvider` (only use it when you want to scope a different instance to a subtree). Just import the config once at your entry and render with `createRoot`:
+
+```javascript
+// index.js
+import { createRoot } from "react-dom/client";
+import App from "./App";
+import "./i18n"; // side-effect import: initializes i18next
+
+const root = createRoot(document.getElementById("root"));
+root.render(<App />);
+```
+
+### Using translations in components
+
+Use the `useTranslation` hook to access the `t` function for translating text:
+
+```javascript
+// MyComponent.js
+import React from "react";
+import { useTranslation } from "react-i18next";
+
+const MyComponent = () => {
+  const { t } = useTranslation();
+  return <p>{t("welcome_message")}</p>;
+};
+
+export default MyComponent;
+```
+
+### Switching languages
+
+To switch languages, use the `i18n.changeLanguage` method:
+
+```javascript
+// LanguageSwitcher.js
+import React from "react";
+import { useTranslation } from "react-i18next";
+
+const LanguageSwitcher = () => {
+  const { i18n } = useTranslation();
+
+  const changeLanguage = (lng) => {
+    i18n.changeLanguage(lng);
+  };
+
+  return (
+    <div>
+      <button onClick={() => changeLanguage("en")}>English</button>
+      <button onClick={() => changeLanguage("fr")}>Français</button>
+    </div>
+  );
+};
+
+export default LanguageSwitcher;
+```
+
+### Interpolation and variables
+
+Most translations need to inject runtime values. Pass an options object as the second argument to `t`:
+
+```json
+// locales/en.json
+{
+  "greeting": "Hello, {{name}}!"
+}
+```
+
+```javascript
+const { t } = useTranslation();
+return <p>{t("greeting", { name: user.name })}</p>;
+```
+
+For rich text with embedded React elements (e.g. links inside a sentence), use the `Trans` component so translators can reorder children without breaking JSX:
+
+```javascript
+import { Trans } from "react-i18next";
+
+<Trans i18nKey="terms">
+  By continuing you accept our <a href="/terms">terms</a>.
+</Trans>;
+```
+
+### Pluralization
+
+i18next picks the correct plural form based on the active language's CLDR rules. Define keys with the `_one`, `_other`, `_zero`, `_few`, `_many` suffixes and pass `count`:
+
+```json
+{
+  "items_zero": "No items",
+  "items_one": "{{count}} item",
+  "items_other": "{{count}} items"
+}
+```
+
+```javascript
+t("items", { count: cart.length });
+```
+
+### Namespaces
+
+Splitting translations into namespaces (one JSON file per feature) keeps bundles small and avoids key collisions. Load only the namespaces a component needs:
+
+```javascript
+const { t } = useTranslation(["checkout", "common"]);
+t("checkout:placeOrder");
+t("common:cancel");
+```
+
+### Lazy-loading translations
+
+Shipping every locale to every user wastes bandwidth. Use `i18next-http-backend` to fetch translation files on demand and `i18next-browser-languagedetector` to pick the user's language automatically:
+
+```javascript
+import i18n from "i18next";
+import HttpBackend from "i18next-http-backend";
+import LanguageDetector from "i18next-browser-languagedetector";
+import { initReactI18next } from "react-i18next";
+
+i18n
+  .use(HttpBackend)
+  .use(LanguageDetector)
+  .use(initReactI18next)
+  .init({
+    fallbackLng: "en",
+    backend: { loadPath: "/locales/{{lng}}/{{ns}}.json" },
+  });
+```
+
+Pair this with React `Suspense` so components render their fallback while a translation file loads:
+
+```javascript
+i18n.init({ react: { useSuspense: true } });
+
+<Suspense fallback={<Spinner />}>
+  <App />
+</Suspense>;
+```
+
+### Right-to-left (RTL) layout
+
+For languages like Arabic or Hebrew, set the document direction when the language changes and let CSS logical properties (`margin-inline-start`, `padding-inline-end`, etc.) handle the rest:
+
+```javascript
+useEffect(() => {
+  document.documentElement.dir = i18n.dir(); // 'ltr' or 'rtl'
+  document.documentElement.lang = i18n.language;
+}, [i18n.language]);
+```
+
+### Date, number, and currency formatting
+
+Don't hand-format numbers or dates. Use the built-in `Intl` APIs, which respect the locale's conventions for separators, ordering, and currency symbols:
+
+```javascript
+new Intl.NumberFormat("de-DE", {
+  style: "currency",
+  currency: "EUR",
+}).format(1234.5); // "1.234,50 €"
+
+new Intl.DateTimeFormat("ja-JP", { dateStyle: "long" }).format(new Date());
+// "2026年4月23日"
+
+new Intl.RelativeTimeFormat("en", { numeric: "auto" }).format(-1, "day");
+// "yesterday"
+```
+
+i18next can call these via its built-in formatter: `t('updated', { date, formatParams: { date: { dateStyle: 'long' } } })`.
+
+### SSR and Next.js considerations
+
+- For Next.js App Router, use `next-intl` or `i18next` with the `i18next/react-i18next` SSR setup. Initialize i18next per request so the server doesn't leak one user's language to another.
+- Send the active language in the initial HTML (`<html lang="...">`) and serialize the loaded resources so the client can hydrate without a flash of untranslated content.
+- Server Components can call `t` directly once i18n is initialized; pass the `t` function or translated strings down to Client Components rather than re-initializing i18n on the client when possible.
+
+## Further reading
+
+- [react-i18next documentation](https://react.i18next.com/)
+- [i18next documentation](https://www.i18next.com/)
+- [react-intl documentation](https://formatjs.io/docs/react-intl/)
+- [i18next plurals](https://www.i18next.com/translation-function/plurals)
+- [i18next namespaces](https://www.i18next.com/principles/namespaces)
+- [Suspense mode in react-i18next](https://react.i18next.com/latest/usesuspense)
+- [MDN: Intl.NumberFormat](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/NumberFormat)
+- [MDN: Intl.DateTimeFormat](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/DateTimeFormat)
+- [next-intl for Next.js App Router](https://next-intl.dev/)

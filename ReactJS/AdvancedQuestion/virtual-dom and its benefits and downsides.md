@@ -1,0 +1,90 @@
+---
+title: How does virtual DOM in React work? What are its benefits and downsides?
+---
+
+## TL;DR
+
+The virtual DOM in React is a lightweight copy of the actual DOM. When the state of a component changes, React creates a new virtual DOM tree and compares it with the previous one using a process called "reconciliation." Only the differences are then updated in the actual DOM, making updates more efficient. The benefits include improved performance and a more declarative way to manage UI. However, it can add complexity and may not be as performant for very simple applications.
+
+---
+
+## How does virtual DOM in React work?
+
+### What is the virtual DOM?
+
+The virtual DOM is an in-memory tree of plain JavaScript objects that describe what the UI should look like. React keeps this tree (built out of React elements and internal Fiber nodes) and uses it to figure out the minimum set of changes to apply to the real DOM.
+
+The overall update cycle has two phases:
+
+- **Render phase (reconciliation)**: React calls your components, builds a new tree of elements, and diffs it against the previous tree to figure out what changed. This phase is pure and can be paused, resumed, or thrown away by the scheduler.
+- **Commit phase**: React applies the calculated changes to the real DOM and runs effects. This phase is synchronous and cannot be interrupted.
+
+### How does it work?
+
+1. **Initial render**: When a React component first renders, React builds a tree of elements (the virtual DOM) and a parallel internal Fiber tree. It then commits the corresponding nodes to the real DOM.
+2. **State change**: When state or props change, React schedules a re-render and builds a new element tree from the updated component output.
+3. **Diffing**: React walks the new tree and compares it with the previous one. The algorithm runs in O(n) by relying on two heuristics: elements of different types produce different trees, and the developer hints which children are stable across renders by giving them a `key`.
+4. **Commit**: React applies only the differences (insertions, updates, deletions) to the real DOM and then runs layout effects and effects.
+
+### Fiber, keys, and concurrent rendering
+
+- **Fiber** is the data structure React has used since v16 to represent work-in-progress trees. Each Fiber node holds enough state for React to pause work, switch to a higher-priority update, and later resume — that's what makes concurrent features like `useTransition`, `Suspense`, and `useDeferredValue` possible.
+- **Keys** are how you tell React which children are the same across renders. Without stable keys (or with index keys on a reordered list), React assumes positional equality and may unnecessarily unmount and remount components, losing state.
+- **Concurrent rendering** lets React work on multiple versions of the tree at once, mark some updates as non-urgent, and bail out if a higher-priority update arrives — all built on top of the virtual DOM / Fiber model.
+- **The React Compiler** (stable as of 2025) builds on this model by automatically memoizing components and values at compile time, which often removes the need for hand-written `useMemo`/`useCallback` while still relying on the same diffing pipeline at runtime.
+
+### Code example
+
+```jsx
+import { useState } from "react";
+
+function MyComponent() {
+  const [count, setCount] = useState(0);
+
+  const increment = () => setCount((c) => c + 1);
+
+  return (
+    <div>
+      <p>{count}</p>
+      <button onClick={increment}>Increment</button>
+    </div>
+  );
+}
+```
+
+When the button is clicked, React renders a new element tree, diffs it against the previous one, sees that only the `<p>` text changed, and updates just that text node in the real DOM.
+
+## Benefits of virtual DOM
+
+### Improved performance
+
+- **Efficient updates**: By computing a minimal patch and updating only the changed parts of the DOM, React avoids the most expensive parts of direct DOM manipulation.
+- **Batched updates**: React batches multiple state updates within the same event (and across async boundaries since React 18) so the DOM is only touched once per render cycle.
+
+### Declarative UI
+
+- **Simplified development**: You describe what the UI should look like for a given state and React figures out how to get there. Application code rarely needs to read from or imperatively mutate the DOM.
+
+### Enables advanced rendering features
+
+- **Concurrent rendering**: The ability to compute renders off-DOM is what makes interruptible rendering, transitions, and `Suspense` possible.
+- **Renderer flexibility**: The same component model powers other renderers (React Native, react-three-fiber, custom renderers). Note however that React Native does not use a browser-style virtual DOM that diffs against HTML elements — it diffs against native view nodes via a separate renderer. The shared piece is React's reconciliation, not the DOM itself.
+
+## Downsides of virtual DOM
+
+### Complexity
+
+- **Learning curve**: Understanding rendering, reconciliation, keys, and effects takes time, and incorrect mental models lead to subtle bugs.
+- **Overhead**: For very simple, mostly static UIs, the cost of maintaining a virtual tree is real even if usually small.
+
+### Performance limitations
+
+- **Not a silver bullet**: A diff is still work. Hand-written, surgically optimized DOM updates can outperform React for very narrow scenarios, and frameworks that compile away the virtual DOM (Svelte, Solid) can be faster on certain workloads.
+
+## Further reading
+
+- [Render and commit (React docs)](https://react.dev/learn/render-and-commit)
+- [Reconciliation (React docs)](https://legacy.reactjs.org/docs/reconciliation.html)
+- [React Fiber Architecture](https://github.com/acdlite/react-fiber-architecture)
+- [React Compiler documentation](https://react.dev/learn/react-compiler)
+- [What is the Virtual DOM in React?](https://www.freecodecamp.org/news/what-is-the-virtual-dom-in-react/)

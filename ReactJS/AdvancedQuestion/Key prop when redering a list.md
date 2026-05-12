@@ -1,0 +1,122 @@
+---
+title: What is the purpose of the `key` prop in React?
+---
+
+## TL;DR
+
+The `key` prop tells React how to identify each child in a list across renders so it can match the right component instance to the right data, preserve its state, and reorder DOM nodes correctly. A `key` only needs to be unique among siblings, not globally. Changing a component's `key` is also the idiomatic way to **reset its state** — React unmounts the old instance and mounts a fresh one.
+
+```jsx
+<ul>
+  {items.map((item) => (
+    <ListItem key={item.id} value={item.value} />
+  ))}
+</ul>
+```
+
+---
+
+## What is the purpose of the `key` prop in React?
+
+### Introduction
+
+The `key` prop is a special attribute you need to include when creating lists of elements in React. It is crucial for helping React identify which items have changed, been added, or removed, thereby optimizing the rendering process.
+
+### Why `key` is important
+
+1. **Correct identity during reconciliation**: When React diffs a list, the `key` is how it decides which previous element corresponds to which new one. Without keys (or with bad keys) React can still render the list, but it will associate the wrong component instance with the wrong data — which means the wrong internal state, refs, and DOM nodes get reused. The bigger risk is incorrect state association, not raw DOM operation count.
+2. **Efficient reordering**: With stable keys, React can move existing DOM nodes instead of unmounting and remounting them when items are reordered.
+3. **Explicit state reset**: Changing a component's `key` deliberately is the idiomatic way to force React to unmount the old instance and mount a brand-new one (see [Resetting state with a key](#resetting-state-with-a-key) below).
+
+### How to use the `key` prop
+
+When rendering a list of elements, you should provide a unique `key` for each element. This key should be stable, meaning it should not change between renders. Typically, you can use a unique identifier from your data, such as an `id`.
+
+```jsx
+const items = [
+  { id: 1, value: "Item 1" },
+  { id: 2, value: "Item 2" },
+  { id: 3, value: "Item 3" },
+];
+
+function ItemList() {
+  return (
+    <ul>
+      {items.map((item) => (
+        <ListItem key={item.id} value={item.value} />
+      ))}
+    </ul>
+  );
+}
+
+function ListItem({ value }) {
+  return <li>{value}</li>;
+}
+```
+
+### Rules for keys
+
+- **Unique among siblings, not globally**: Keys only need to be unique within a single `map()` / array. Two unrelated lists can happily both contain a `key="1"`.
+- **Stable across renders**: The same piece of data should get the same key every render. Avoid `Math.random()` or `Date.now()`.
+- **Keys are not passed to the child**: `key` is consumed by React itself. If your child component also needs the id, pass it as a separate prop.
+
+### Keys on Fragments
+
+When you render a list of fragments, you cannot use the `<>...</>` shorthand because it does not accept props. Use the long-form `<Fragment key={...}>` instead:
+
+```jsx
+import { Fragment } from "react";
+
+function Glossary({ entries }) {
+  return (
+    <dl>
+      {entries.map((entry) => (
+        <Fragment key={entry.term}>
+          <dt>{entry.term}</dt>
+          <dd>{entry.definition}</dd>
+        </Fragment>
+      ))}
+    </dl>
+  );
+}
+```
+
+### Common mistakes
+
+1. **Using array index as key for dynamic lists**: If the list can be reordered, filtered, or have items inserted in the middle, using the index causes React to associate the wrong state with the wrong item — a classic cause of "the input I typed into moved to the wrong row" bugs. Index-as-key is acceptable only for **static, append-only** lists that never reorder.
+2. **Non-unique keys**: Duplicate keys among siblings trigger a warning and cause React to mis-match items during reconciliation.
+3. **Generating a new key every render**: `key={Math.random()}` forces every item to remount on every render — killing performance and wiping state.
+
+```jsx
+// Bad: array index as key in a list that can change order.
+<ul>
+  {items.map((item, index) => (
+    <ListItem key={index} value={item.value} />
+  ))}
+</ul>
+
+// Good: stable unique identifier from your data.
+<ul>
+  {items.map((item) => (
+    <ListItem key={item.id} value={item.value} />
+  ))}
+</ul>
+```
+
+### Resetting state with a key
+
+Because React treats a component with a new `key` as a different instance, changing the `key` unmounts the old component and mounts a new one — resetting all of its state, refs, and effects. This is the idiomatic way to reset a form or other stateful subtree when some identifier changes:
+
+```jsx
+function ProfileEditor({ userId }) {
+  // When userId changes, the Form unmounts and a fresh one mounts with
+  // pristine local state — no manual reset logic needed.
+  return <Form key={userId} userId={userId} />;
+}
+```
+
+## Further reading
+
+- [React documentation on keys](https://react.dev/learn/rendering-lists#why-does-react-need-keys)
+- [Why keys are important in React](https://medium.com/@robinpokorny/index-as-a-key-is-an-anti-pattern-e0349aece318)
+- [Preserving and Resetting State in React](https://react.dev/learn/preserving-and-resetting-state)

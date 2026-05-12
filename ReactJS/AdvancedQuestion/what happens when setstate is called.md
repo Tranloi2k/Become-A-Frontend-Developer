@@ -1,0 +1,89 @@
+---
+title: Explain what happens when the `useState` setter function is called in React
+---
+
+## TL;DR
+
+When the setter function returned by the `useState` hook is called in React, it schedules an update to the component's state value. React then queues a re-render of the component with the new state. This process is typically asynchronous, and React batches multiple state updates together for performance.
+
+---
+
+## What happens when the `useState` setter is called
+
+### State update scheduling
+
+When you call the setter function provided by `useState` (e.g., `setCount`), React schedules an update for that specific state variable. This doesn't happen instantly; React marks the component as needing to re-render with the updated state value.
+
+```javascript
+const [count, setCount] = useState(0);
+// ...
+setCount(count + 1); // Schedules an update to set 'count' to 1
+```
+
+### Replacing object state
+
+The `useState` setter function **replaces** the old state value entirely with the new value you provide. If your state is an object and you only want to update one property, you need to manually spread the old state and override the specific property.
+
+```javascript
+const [user, setUser] = useState({ name: "Anon", age: 99 });
+
+// To update only name, you must spread the old state:
+setUser((prevState) => ({ ...prevState, name: "John" }));
+// If you just did setUser({ name: 'John' }), the 'age' property would be lost.
+```
+
+### Bailing out with `Object.is`
+
+Before scheduling a re-render, React compares the new state to the current state with `Object.is`. If they are the same, React skips both the re-render and the children's re-renders. This is why mutating an existing object/array and passing the same reference back will not trigger an update — you must pass a new reference.
+
+```javascript
+const [count, setCount] = useState(0);
+setCount(0); // Same value, React bails out — no re-render
+
+const [items, setItems] = useState([1, 2, 3]);
+items.push(4);
+setItems(items); // Same reference, bail-out! Use setItems([...items, 4]) instead.
+```
+
+### Re-rendering
+
+After scheduling the state update(s), React will eventually trigger a re-render of the component. The functional component body is executed again with the new state value(s). React updates its virtual DOM, compares it with the previous version, and efficiently updates the actual DOM only where necessary.
+
+### Asynchronous nature and automatic batching
+
+State updates triggered by `useState` setters are asynchronous and batched. Since React 18, **automatic batching** applies broadly — React groups multiple state updates into a single re-render not just inside event handlers and effects, but also inside `setTimeout`/`setInterval` callbacks, promises (`.then`/`await`), and native event handlers. (Pre-React-18, batching only happened inside React event handlers.)
+
+Because updates are batched, you shouldn't rely on the state variable having its new value immediately after calling the setter. If the new state depends on the previous state, use the functional updater form — the updater receives the latest **queued** state, not the value captured by closure.
+
+```javascript
+// Assume count is 0
+setCount(count + 1); // Queues update to 1
+setCount(count + 1); // Still sees count as 0, queues update to 1 again!
+// Result might be 1, not 2
+
+// Correct way using functional update:
+setCount((prevCount) => prevCount + 1); // prevCount is the latest queued value (0 -> 1)
+setCount((prevCount) => prevCount + 1); // prevCount is now 1 -> 2
+// Result will be 2
+```
+
+If you need to opt out of batching for a specific update (rare), you can wrap it in `flushSync` from `react-dom`.
+
+### Updates inside transitions
+
+When a setter is called inside `startTransition` (or via `useTransition`), React marks the resulting re-render as a **non-urgent transition**. Transition updates can be interrupted by more urgent updates (like typing) and let you keep the previous UI visible while the next render is being prepared. Updates outside a transition are urgent by default and run synchronously to the next paint.
+
+```javascript
+import { startTransition } from "react";
+
+startTransition(() => {
+  setSearchQuery(input); // Marked as a non-urgent transition update
+});
+```
+
+## Further reading
+
+- [React Docs: `useState`](https://react.dev/reference/react/useState)
+- [React Docs: Queueing a series of state updates](https://react.dev/learn/queueing-a-series-of-state-updates)
+- [React 18 automatic batching](https://github.com/reactwg/react-18/discussions/21)
+- [React Docs: `startTransition`](https://react.dev/reference/react/startTransition)
