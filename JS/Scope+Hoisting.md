@@ -8,7 +8,7 @@ Optimized tool selectionHere are concise explanations for each concept in JavaSc
 
 **Temporal Dead Zone (TDZ)**
 
-- The period between entering a scope and the actual declaration of a `let` or `const` variable. Accessing the variable in this zone throws a ReferenceError. Example:
+- is a specific behavior in JavaScript where a variable is inaccessible from the moment its containing scope begins until the moment it is actually declared. Accessing the variable in this zone throws a ReferenceError. Example:
   ```js
   console.log(a); // ReferenceError
   let a = 5;

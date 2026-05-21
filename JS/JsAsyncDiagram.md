@@ -14,37 +14,23 @@
 
 ## 🚦 **How the Flow Works**
 
-1. Asynchronous functions (**setTimeout**, **AJAX**, **DOM events**, ...) are called and handled by **Web APIs**.
-2. When a **Web API** finishes, its callback is pushed to the **Callback Queue**.
-3. The **Event Loop** keeps checking:
-   - If the **Call Stack** is empty, it pushes the next callback from the **Queue** to the Stack for execution.
-4. This process repeats until there are no more tasks.
+The event loop is a concept within the JavaScript runtime environment regarding how asynchronous operations are executed within JavaScript engines. It works as such:
+
+1. The JavaScript engine starts executing scripts, placing synchronous operations on the call stack.
+2. When an asynchronous operation is encountered (e.g., `setTimeout()`, HTTP request), it is offloaded to the respective Web API or Node.js API to handle the operation in the background.
+3. Once the asynchronous operation completes, its callback function is placed in the respective queues – task queues (also known as macrotask queues / callback queues) or microtask queues. We will refer to "task queue" as "macrotask queue" from here on to better differentiate from the microtask queue.
+4. The event loop continuously monitors the call stack and executes items on the call stack. If/when the call stack is empty:
+   1. Microtask queue is processed. Microtasks include promise callbacks (`then`, `catch`, `finally`), `await` continuations, `MutationObserver` callbacks, and calls to `queueMicrotask()`. The event loop takes the first callback from the microtask queue and pushes it to the call stack for execution. This repeats until the microtask queue is empty.
+   2. Macrotask queue is processed. Macrotasks include web APIs like `setTimeout()`, HTTP requests, user interface event handlers like clicks, scrolls, etc. The event loop dequeues the first callback from the macrotask queue and pushes it onto the call stack for execution. However, after a macrotask queue callback is processed, the event loop does not proceed with the next macrotask yet! The event loop first checks the microtask queue. Checking the microtask queue is necessary as microtasks have higher priority than macrotask queue callbacks. The macrotask queue callback that was just executed could have added more microtasks!
+      1. If the microtask queue is non-empty, process them as per the previous step.
+      2. If the microtask queue is empty, the next macrotask queue callback is processed. This repeats until the macrotask queue is empty.
+5. This process continues indefinitely, allowing the JavaScript engine to handle both synchronous and asynchronous operations efficiently without blocking the call stack.
 
 > **Note:**
 >
 > - JavaScript has only **one Call Stack** (single-threaded), but thanks to this mechanism, it can handle multiple asynchronous tasks smoothly.
 > - **Callback Queue** ≈ **Task Queue** (macro-task).
 > - **Microtask Queue** (Promise, MutationObserver, ...) has **higher priority** than Callback Queue but is not shown in this diagram. Event loop always processes tasks in Microtask Queue first whenever Call Stack is empty, then continues to process Macrotask Queue.
-
-# Rendering Timing
-
-In web development, rendering timing refers to the measurement and breakdown of the steps a browser takes to convert your code (HTML, CSS, and JavaScript) into the actual pixels displayed on a user's screen.
-
-#### 1. The Pixel Pipeline (Frame Rendering Lifecycle)
-
-When you change something on a webpage (like an element expanding, or a color changing via JavaScript), the browser doesn't just instantly update the screen. It goes through a specific sequence of tasks known as the Pixel Pipeline:
-
-- JavaScript / CSS Animations: The browser executes any JavaScript that triggers a visual change (e.g., adding a CSS class or manipulating the DOM).
-- Style Calculations: The browser figures out which CSS rules apply to which HTML elements based on selectors.
-- Layout (or Reflow): The browser calculates the geometry of the page. It determines exactly how much space each element takes up and where it is positioned on the screen. Note: Layout is highly "expensive" in terms of performance. Changing one element's width can force the browser to recalculate the layout of the entire page.
-- Paint: The browser fills in the pixels. It draws text, colors, images, borders, and shadows. Drawing is usually done onto multiple surfaces, often called "layers."
-- Composite: Because the page parts were drawn into potentially different layers, they need to be drawn to the screen in the correct order so that overlapping elements render correctly.
-
-The Golden Rule of Rendering Timing: You don't always have to trigger every step of the pipeline. For example, if you only change a background color, the browser skips Layout (because geometry didn't change) and jumps straight to Paint and Composite. This is why animating transform or opacity is much faster than animating width or margin.
-
-#### 2. The 60 FPS Target and the 16-Millisecond Budget
-
-Most modern displays refresh 60 times per second (60 Hertz). To ensure smooth scrolling and animations, the browser must generate a new frame for every screen refresh.To achieve 60 frames per second (FPS), the browser has exactly 16.67 milliseconds ($1000ms / 60$) to complete all the work required to render a single frame. In reality, because the browser has its own internal overhead, you only have about 10 to 12 milliseconds of execution time to get your work done.
 
 # 🟡 **II Cách sử dụng `this` trong JavaScript (có giải thích ví dụ)**
 
