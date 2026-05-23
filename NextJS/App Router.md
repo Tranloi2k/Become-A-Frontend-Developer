@@ -1,3 +1,5 @@
+> **Bộ tài liệu đầy đủ:** xem [README.md](./README.md) và [1. App Router - Chi tiet.md](./1.%20App%20Router%20-%20Chi%20tiet.md) cho routing, layouts, dynamic routes, searchParams.
+
 # I. Navigating Between Pages
 
 **Next.js automatically code splits your application by route segments**. This is different from a traditional React SPA, where the browser loads all your application code on the initial page load.
