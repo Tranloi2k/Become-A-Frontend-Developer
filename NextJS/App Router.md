@@ -1,7 +1,60 @@
-> **Bộ tài liệu đầy đủ:** xem [README.md](./README.md) và [1. App Router - Chi tiet.md](./1.%20App%20Router%20-%20Chi%20tiet.md) cho routing, layouts, dynamic routes, searchParams.
+# App Router — Điều hướng & Prefetch (bổ trợ)
 
-# I. Navigating Between Pages
+Phần ngắn về **`<Link>`** và prefetch. Hướng dẫn **đầy đủ** routing, layout, `searchParams`, `error.tsx` → **[1. App Router — Chi tiết](./1.%20App%20Router%20-%20Chi%20tiet.md)**.
 
-**Next.js automatically code splits your application by route segments**. This is different from a traditional React SPA, where the browser loads all your application code on the initial page load.
+**Docs:** [Routing](https://nextjs.org/docs/app/getting-started/routing) · [Link](https://nextjs.org/docs/app/api-reference/components/link)
 
-**In production, whenever <Link> components appear in the browser's viewport, Next.js automatically prefetches the code for the linked route in the background**. By the time the user clicks the link, the code for the destination page will already be loaded in the background, and this is what makes the page transition near-instant!
+---
+
+## Code splitting theo route
+
+Next.js **tự chia bundle theo route segment** — khác SPA load hết app lần đầu.
+
+```text
+User mở /           → chỉ JS cho /
+User click /products → load thêm chunk /products
+```
+
+---
+
+## `<Link>` và prefetch
+
+```tsx
+import Link from "next/link";
+
+<Link href="/products">Shop</Link>
+```
+
+| Hành vi | Chi tiết |
+|---------|----------|
+| Client navigation | Không full page reload |
+| Prefetch (production) | Khi link vào viewport, Next.js prefetch route trong nền |
+| Kết quả | Click gần như tức thì |
+
+**So với `<a href>`:** `<a>` luôn full reload (trừ khi intercept thủ công).
+
+---
+
+## Khi nào dùng `router.push`?
+
+```tsx
+"use client";
+import { useRouter } from "next/navigation";
+
+const router = useRouter();
+router.push("/products?category=smartphones");
+```
+
+Nova: `product-toolbar.tsx` đổi filter bằng cách **cập nhật URL** `searchParams` — share được state, back/forward đúng.
+
+---
+
+## Liên quan Nova Shop
+
+| Pattern | File |
+|---------|------|
+| Link catalog | `navbar.tsx`, `storefront-hero.tsx` |
+| URL filter | `product-toolbar.tsx` + `product-filters.ts` |
+| Dynamic slug | `products/[slug]/page.tsx` |
+
+**Đọc tiếp:** [1. App Router — Chi tiết](./1.%20App%20Router%20-%20Chi%20tiet.md) · [10. Nova Shop](./10.%20Vi%20du%20Nova%20Shop.md)
