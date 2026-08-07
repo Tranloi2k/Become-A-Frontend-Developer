@@ -2,6 +2,9 @@
 
 > V8's optimizing compiler: it turns hot bytecode plus type feedback into fast native machine code — and gracefully unwinds when its assumptions turn out to be wrong.
 
+**Prerequisites:** `03-bytecode-interpreter-ignition` (TurboFan consumes Ignition's feedback).  
+**After this chapter you will understand:** (1) what speculative optimization is and why it is valid despite making assumptions, (2) the sea-of-nodes IR and what optimization freedom it gives, (3) which coding patterns keep functions in fast optimized code.
+
 ## 1. What "Just-In-Time" really means
 
 A traditional ahead-of-time compiler (like a C compiler) runs once, before the program ever executes, and has to produce code that's correct for every possible input. A **Just-In-Time (JIT)** compiler does something fundamentally different: it compiles code *while the program is running*, which means it gets to use information that an ahead-of-time compiler could never have — namely, what types of values actually flow through a function in practice.
@@ -102,6 +105,12 @@ Reading `--trace-opt` you'll see lines indicating a function is being optimized;
 
 The guidance here follows directly from how speculation works, and it can be summed up as: be predictable on hot paths. Keep argument and variable types stable — don't pass integers on one call and objects on the next, and don't flip a loop variable between integer and float. Keep object shapes monomorphic at hot property accesses (chapters `05` and `06`). Keep arrays packed and homogeneous (`08`). Avoid the specific patterns that force deoptimization in tight loops, such as changing an array's element kind, reading holes, or `delete`-ing object properties. And don't deliberately make functions un-inlinable for no reason. The historical advice about `try/catch` and `arguments` hurting optimization has largely been addressed in modern V8, so don't cargo-cult old rules — but do keep types and shapes steady. Above all, profile before micro-optimizing, because the engine is genuinely very good and readable code usually wins.
 
-## 10. Key takeaways
+## 10. Check your understanding
+
+1. Speculative optimization makes assumptions that could be wrong. What makes this safe — that is, how does V8 guarantee correctness when an assumption fails?
+2. You call `add(1, 2)` one million times and then call `add("x", "y")`. What happens to the optimized code for `add`, and why?
+3. Explain escape analysis. What allocation does it eliminate, and what must be true for the optimization to apply?
+
+## 11. Key takeaways
 
 TurboFan is V8's top-tier optimizing JIT, driven entirely by the type feedback Ignition collected. It represents your function as a sea-of-nodes graph that frees it to reorder and eliminate operations, and it applies inlining, type specialization, escape analysis, and the classic compiler optimizations to produce tight machine code. Every speculation is protected by a cheap guard, and a failed guard triggers deoptimization back to the interpreter — so the practical lesson is that **type and shape stability are what keep you in fast code**. Compilation happens concurrently off the main thread, so your job isn't to outsmart the compiler with syntax tricks; it's to give it predictable runtime behavior to work with.

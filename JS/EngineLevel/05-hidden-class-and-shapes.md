@@ -2,6 +2,9 @@
 
 > How V8 gives dynamic, dictionary-like objects the same fast, struct-style property access you'd expect from a statically typed language.
 
+**Prerequisites:** `01-js-value-representation` (objects are HeapObjects with a Map pointer).  
+**After this chapter you will understand:** (1) what a hidden class stores and how it enables fast property access, (2) why property *order* matters as much as property *names*, (3) what dictionary mode is and which operations trigger it.
+
 ## 1. The problem hidden classes solve
 
 In a statically typed language like C++ or Java, a field access such as `point.x` compiles down to "read the memory at a fixed offset from `point`." The compiler knows the exact layout of a `Point` ahead of time, so `x` always lives at, say, byte offset 8, and the access is a single machine instruction.
@@ -101,6 +104,12 @@ Compare the `map` (hidden class) addresses printed for `a` and `b`. Despite havi
 
 People often assume that two objects with the same keys automatically share a hidden class. They don't, unless they were built along the same transition path — order and construction history are what count. It's also a myth that you need `class` syntax to get shapes; a plain object literal or consistent field-by-field construction produces stable shapes just fine. And the idea that you can freely `delete` and re-add properties without consequence is wrong: `delete` is one of the most reliable ways to push a hot object into slow dictionary mode.
 
-## 10. Key takeaways
+## 10. Check your understanding
+
+1. Objects `a = {}; a.x = 1; a.y = 2` and `b = {}; b.y = 2; b.x = 1` have the same keys and values. Do they share a hidden class? Why or why not?
+2. Which single operation most reliably pushes a hot object into dictionary mode, and what is the consequence for property access speed?
+3. How do hidden classes enable inline caches to work? What does the IC actually store, and what does it check on each subsequent access?
+
+## 11. Key takeaways
 
 Objects that have the same properties added in the same order share a **hidden class** (V8 calls it a Map; other engines call it a Shape or Structure), and that hidden class records each property's fixed offset, turning dynamic property access into something close to a static struct read. Shapes evolve through a reusable tree of **transitions**, and because those transitions are ordered, **property order and consistency** determine whether your code stays monomorphic. `delete` and overly dynamic structures can drop objects into slow **dictionary mode**. The single most useful habit is to initialize a complete, consistently ordered set of fields up front — usually in a constructor — so all your instances of a given "type" share one shape.

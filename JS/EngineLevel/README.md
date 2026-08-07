@@ -2,39 +2,54 @@
 
 A topic-by-topic reference on how JavaScript actually runs — from raw source text to optimized machine code, memory, concurrency, and WebAssembly. The focus is primarily on **V8** (Chrome/Node), with notes on other engines where relevant.
 
-Each topic is a standalone English Markdown file written as a readable chapter: it starts from the intuition, explains the *why* in prose, grounds each idea in small code examples, and points you at the Node/V8 flags you can use to see the behavior yourself. The numbering follows a natural learning order: **representation → compilation pipeline → optimization → runtime semantics → memory → async/concurrency → ecosystem**.
+Each topic is a standalone Markdown file written as a readable chapter: it starts from the intuition, explains the *why* in prose, grounds each idea in small code examples, and points you at the Node/V8 flags you can use to see the behavior yourself. The numbering follows a natural learning order: **representation → compilation pipeline → optimization → runtime semantics → memory → async/concurrency → ecosystem**.
+
+Each chapter includes **Prerequisites**, **Learning goals**, and a **"Check your understanding"** section with three questions for active recall. Cover the answers and try to answer from memory — this is the most effective way to retain the material.
+
+## Who this is for
+
+This guide assumes you already write JavaScript confidently. You don't need to know systems programming or compiler theory. What you need is curiosity about *why* JavaScript behaves the way it does under load, and a willingness to run Node with a few flags.
 
 ## Contents
 
+Reading times are estimates for focused reading. Allow extra time if you run the Node experiments.
+
 ### Foundations: how a value/program is represented
-1. [JS Value Representation](./01-js-value-representation.md) — tagged values, Smi vs. HeapObject, strings, NaN-boxing.
-2. [Parser & AST](./02-parser-and-ast.md) — lexing, parsing, the AST, lazy/streaming parsing.
+1. [JS Value Representation](./01-js-value-representation.md) — tagged values, Smi vs. HeapObject, strings, NaN-boxing. *(~15 min)*
+2. [Parser & AST](./02-parser-and-ast.md) — lexing, parsing, the AST, lazy/streaming parsing. *(~10 min)*
 
 ### Compilation pipeline
-3. [Bytecode Interpreter (Ignition)](./03-bytecode-interpreter-ignition.md) — register bytecode, type feedback, tiering.
-4. [JIT Compiler (TurboFan)](./04-jit-compiler-turbofan.md) — speculative optimization, sea-of-nodes, key passes.
+3. [Bytecode Interpreter (Ignition)](./03-bytecode-interpreter-ignition.md) — register bytecode, type feedback, tiering. *(~10 min)*
+4. [JIT Compiler (TurboFan)](./04-jit-compiler-turbofan.md) — speculative optimization, sea-of-nodes, key passes. *(~12 min)*
 
 ### Making dynamic code fast
-5. [Hidden Class & Shapes](./05-hidden-class-and-shapes.md) — Maps/Shapes, transitions, dictionary mode.
-6. [Inline Cache](./06-inline-cache.md) — mono/poly/megamorphic caching of lookups.
-7. [Object Optimization](./07-object-optimization.md) — fast vs. dictionary properties, `Object` vs `Map`.
-8. [Array Optimization](./08-array-optimization.md) — elements kinds, packed vs. holey, TypedArrays.
-9. [Deoptimization](./09-deoptimization.md) — bailouts, deopt loops, how to avoid them.
+5. [Hidden Class & Shapes](./05-hidden-class-and-shapes.md) — Maps/Shapes, transitions, dictionary mode. *(~10 min)*
+6. [Inline Cache](./06-inline-cache.md) — mono/poly/megamorphic caching of lookups. *(~10 min)*
+7. [Object Optimization](./07-object-optimization.md) — fast vs. dictionary properties, `Object` vs `Map`. *(~10 min)*
+8. [Array Optimization](./08-array-optimization.md) — elements kinds, packed vs. holey, TypedArrays. *(~12 min)*
+9. [Deoptimization](./09-deoptimization.md) — bailouts, deopt loops, how to avoid them. *(~10 min)*
 
 ### Runtime semantics
-10. [Execution Context](./10-execution-context.md) — call stack, hoisting, TDZ, `this`.
-11. [Closures & Scope Chain](./11-closures-and-scope-chain.md) — lexical scope, captured bindings.
+10. [Execution Context](./10-execution-context.md) — call stack, hoisting, TDZ, `this`. *(~10 min)*
+11. [Closures & Scope Chain](./11-closures-and-scope-chain.md) — lexical scope, captured bindings. *(~10 min)*
 
 ### Memory
-12. [Memory Layout](./12-memory-layout.md) — stack vs. heap, generational heap spaces.
-13. [Garbage Collection](./13-garbage-collection.md) — Scavenger, Mark-Sweep-Compact, Orinoco, weak refs.
+12. [Memory Layout](./12-memory-layout.md) — stack vs. heap, generational heap spaces. *(~10 min)*
+13. [Garbage Collection](./13-garbage-collection.md) — Scavenger, Mark-Sweep-Compact, Orinoco, weak refs. *(~12 min)*
 
 ### Async & ecosystem
-14. [Event Loop & Async Runtime](./14-event-loop-and-async-runtime.md) — micro/macrotasks, async/await, Node phases.
-15. [Runtime APIs (Browser/Node)](./15-runtime-apis-browser-node.md) — engine vs. host, DOM/`fetch`/`fs`.
-16. [Module System](./16-module-system.md) — ESM vs. CJS, module graph, dynamic import.
-17. [Engine Threads & Concurrency](./17-engine-threads-and-concurrency.md) — workers, isolates, SharedArrayBuffer/Atomics.
-18. [WebAssembly Integration](./18-webassembly-integration.md) — Liftoff/TurboFan, linear memory, JS interop.
+14. [Event Loop & Async Runtime](./14-event-loop-and-async-runtime.md) — micro/macrotasks, async/await, Node phases. *(~10 min)*
+15. [Runtime APIs (Browser/Node)](./15-runtime-apis-browser-node.md) — engine vs. host, DOM/`fetch`/`fs`. *(~8 min)*
+16. [Module System](./16-module-system.md) — ESM vs. CJS, module graph, dynamic import. *(~12 min)*
+17. [Engine Threads & Concurrency](./17-engine-threads-and-concurrency.md) — workers, isolates, SharedArrayBuffer/Atomics. *(~10 min)*
+18. [WebAssembly Integration](./18-webassembly-integration.md) — Liftoff/TurboFan, linear memory, JS interop. *(~10 min)*
+
+## Study tips
+
+- **Read actively, not passively.** Before turning the page, try to answer the "Check your understanding" questions from memory. If you can't, re-read the section that covers that concept.
+- **Run the Node experiments.** The `--allow-natives-syntax` and `--trace-*` flags turn abstract concepts into concrete output you can observe. Seeing `%DebugPrint(42)` print "Smi" is worth more than re-reading the definition.
+- **Connect the chapters.** The optimization story is one continuous thread: values (01) are observed by Ignition (03) into feedback vectors that TurboFan (04) uses to specialize code, keyed off hidden classes (05) via inline caches (06), and failures trigger deopts (09). Following this chain forward and backward is more valuable than reading each chapter in isolation.
+- **Measure before optimizing.** Many of the patterns described here matter only in tight, frequently-executed code. The engine is very good. Read for understanding first; reach for these techniques only when profiling confirms you have a real bottleneck.
 
 ## Suggested reading paths
 

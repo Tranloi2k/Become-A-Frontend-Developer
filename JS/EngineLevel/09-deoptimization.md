@@ -2,6 +2,9 @@
 
 > What happens the moment the JIT's optimistic assumptions break — and why the truly expensive thing isn't a single deopt but a deopt *loop*.
 
+**Prerequisites:** `03-bytecode-interpreter-ignition`, `04-jit-compiler-turbofan`, `05-hidden-class-and-shapes`.  
+**After this chapter you will understand:** (1) why deoptimization is first a correctness mechanism and only second a performance cost, (2) what a deopt loop is and how to identify one, (3) how to read `--trace-deopt` output to find the root cause.
+
 ## 1. Why deopt has to exist
 
 The optimizing compiler makes code fast by speculating: it bets that a value is always a small integer, that an object always has a particular hidden class, that an array is always packed integers (see `04-jit-compiler-turbofan.md`). Those bets are only safe because each one is backed by a **guard** — a cheap runtime check. When a guard fails, the optimized code is no longer valid for the situation at hand, and the engine has to abandon it and continue executing correctly in the interpreter. That bailout is **deoptimization**.
@@ -94,6 +97,12 @@ The single string call is enough to invalidate the integer-specialized version. 
 
 Don't treat every deopt as a defect. Deopt is a normal part of warm-up: code starts in the interpreter, gets optimized, and occasionally adjusts as it sees a slightly wider range of inputs. Rare edge cases — an error path, a logging branch, a one-time configuration step after startup — will deopt and it simply doesn't matter. You only need to care when deopts happen *repeatedly in steady state* on a path that runs constantly. Contorting your code to eliminate a harmless warm-up deopt is wasted effort; measure first, and act only on the deopts that show up hot.
 
-## 9. Key takeaways
+## 9. Check your understanding
+
+1. A function deopts once during startup, runs interpreted, and is later re-optimized. Is this a problem you should fix? When *does* a deopt become worth investigating?
+2. `--trace-deopt` shows a function named `processRecord` deopting repeatedly with reason `"wrong map"`. What does this tell you about `processRecord`'s inputs, and what is the likely fix?
+3. What is a deopt loop, and what is V8's ultimate response if a function keeps entering one?
+
+## 10. Key takeaways
 
 Deoptimization is the engine bailing out of optimized code back to the interpreter when a speculative guard fails — a correctness mechanism first, a performance event second. Its common causes are type instability, shape changes, elements-kind changes, prototype mutation, and arithmetic overflow, all of which trace back to the stability themes from earlier chapters. The thing that actually hurts is a **deopt loop**, which can get a function permanently marked un-optimizable, so the goal is to find and fix the root cause (using `--trace-deopt` to locate it) rather than scattering coercion tricks around. And occasional deopt during warm-up or on cold paths is normal and not worth chasing.

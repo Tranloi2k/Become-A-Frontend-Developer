@@ -2,6 +2,9 @@
 
 > How raw source text becomes a structured tree the engine can execute — and why this stage quietly shapes your app's startup time.
 
+**Prerequisites:** `01-js-value-representation` (understanding HeapObjects helps).  
+**After this chapter you will understand:** (1) what the scanner and parser each do, (2) why V8 lazy-parses most functions to speed up startup, (3) how the parser builds scope information that enables closures.
+
 ## 1. From text to structure
 
 When the engine receives your JavaScript, all it has is a flat sequence of characters — bytes, really. Before a single line can run, the engine must answer some questions: Is this valid JavaScript at all? Where does each function begin and end? Which variables are declared, and in which scopes? None of that is visible in raw text; it has to be *recovered* by analyzing the characters.
@@ -95,6 +98,12 @@ Two more techniques reduce the cost of this stage in practice. **Code caching** 
 
 The headline is that parsing and compiling are not free, and on large applications they can account for a meaningful chunk of cold-start time — sometimes hundreds of milliseconds before any of your logic runs. Smaller, simpler functions pre-parse and full-parse faster. Avoiding the eager parse of large bodies you don't need at startup helps. And keeping `eval` and `with` out of hot scopes keeps the door open for later optimizations. None of this means you should contort your code, but it explains why bundle size and code splitting (see `16-module-system.md`) affect not just download time but startup CPU as well.
 
-## 9. Key takeaways
+## 9. Check your understanding
+
+1. What is the difference between pre-parsing and full-parsing, and which functions get each treatment? Why is this a performance win?
+2. Why does `return` followed by a newline return `undefined` instead of the value on the next line?
+3. Why does the presence of `eval` inside a function scope disable optimizations for variables in that scope?
+
+## 10. Key takeaways
 
 The pipeline is scanner → tokens → parser → AST, and the AST is the canonical structured form of your program that everything downstream consumes. V8's lazy pre-parsing is the key to fast startup: most functions only get a cheap shallow pass until they're actually invoked. Automatic semicolon insertion, scope construction, and `eval`/`with` detection all happen during this stage, which is why they have effects that feel "spooky" until you know parsing is where they're decided. And streaming compilation plus code caching are the reasons large applications still manage to start in a reasonable amount of time.

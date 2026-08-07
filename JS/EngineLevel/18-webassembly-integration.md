@@ -2,6 +2,9 @@
 
 > How WebAssembly runs side by side with JavaScript inside the very same engine — what it's good for, and where the boundary between the two costs you.
 
+**Prerequisites:** `04-jit-compiler-turbofan` (Wasm also uses TurboFan), `17-engine-threads-and-concurrency` (Wasm threads require SharedArrayBuffer).  
+**After this chapter you will understand:** (1) how V8 runs Wasm with the same Liftoff → TurboFan tiering as JavaScript, (2) why only numbers cross the JS/Wasm boundary directly and everything else goes through linear memory, (3) which kinds of work are better suited to Wasm versus JavaScript.
+
 ## 1. What WebAssembly is
 
 **WebAssembly (Wasm)** is a portable **binary instruction format** for a stack-based virtual machine. It's not a language you typically write by hand; it's a *compilation target* for languages like C, C++, Rust, and Go, designed to run at **near-native speed** inside a safe, sandboxed environment — originally in the browser, and increasingly elsewhere. The crucial framing is that Wasm **complements** JavaScript rather than replacing it: the two are designed to work together, with each doing what it's best at.
@@ -71,6 +74,12 @@ The practical decision of when to use Wasm comes down to the nature of the work.
 └─────────────────────────────────────┘
 ```
 
-## 10. Key takeaways
+## 10. Check your understanding
+
+1. V8 compiles a Wasm module with Liftoff first, then re-optimizes hot functions with TurboFan. Why not compile with TurboFan immediately, given that Wasm is already typed and predictable?
+2. You call a Wasm function 10 million times in a loop, passing a JavaScript string each time. Where is the performance cost, and how would you restructure the code to minimize it?
+3. Your team is choosing between rewriting a video codec in pure JavaScript or compiling the existing C implementation to Wasm. What arguments favor Wasm here, and what additional complexity does Wasm introduce?
+
+## 11. Key takeaways
 
 WebAssembly is a **safe, fast, portable, compact binary format** that runs in the **same engine** as JavaScript — in V8 via a Liftoff baseline compiler and TurboFan optimizer, mirroring the JS tiering model. It uses a **sandboxed linear memory** (an `ArrayBuffer`) and its own static type system, isolated from the JavaScript heap. JavaScript and Wasm interoperate through **imports and exports**, but only numbers cross the boundary directly — everything else travels through shared linear memory, which is why you should **minimize boundary crossings** and keep calls chunky. Use Wasm for compute-heavy kernels and for reusing native code, and remember that **WASI** extends its reach well beyond the browser.

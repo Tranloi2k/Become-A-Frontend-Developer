@@ -2,6 +2,9 @@
 
 > The engine runs the *language*; the *host* provides the APIs you actually build with. Keeping this line clear explains a surprising amount about portability.
 
+**Prerequisites:** `14-event-loop-and-async-runtime` (the host implements the event loop).  
+**After this chapter you will understand:** (1) exactly which features come from the engine versus the host, (2) why `document` works in a browser but throws in Node, (3) why `globalThis` is the portable alternative to `window` or `global`.
+
 ## 1. Engine versus runtime
 
 There's a distinction here that, once it clicks, clears up a lot of confusion about why code works in one place and not another.
@@ -57,6 +60,12 @@ if (typeof fetch !== "undefined") {
 }
 ```
 
-## 8. Key takeaways
+## 8. Check your understanding
+
+1. You find code that uses `Array.prototype.map`, `fetch`, and `fs.readFile`. For each, identify whether it comes from the engine or the host, and in which environments it is available.
+2. A library uses `window.location` to read the current URL. A colleague wants to run the same library in a Node-based server-side rendering step. What will break and how would you fix it?
+3. What is the difference between *transpiling* and *polyfilling*? Give a concrete example of each, and explain which layer of the engine/host model each one addresses.
+
+## 9. Key takeaways
 
 The **engine** provides the ECMAScript **language**, while the **runtime/host** provides the **APIs** — the DOM, `fetch`, `fs`, timers — plus the actual event loop implementation. Browser and Node expose different host APIs and different global objects (`window` versus `global`), so portable code should rely on **`globalThis`** and feature detection. Node increasingly implements **web-standard APIs** for isomorphic code, with Deno and Bun going further still. And under the hood, host APIs bridge to native code through the engine's embedding API and feed their results back through the event loop.

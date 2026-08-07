@@ -2,6 +2,9 @@
 
 > How V8 physically stores an object's properties, what keeps an object on the fast path, and what quietly drops it onto the slow one.
 
+**Prerequisites:** `05-hidden-class-and-shapes`, `06-inline-cache`.  
+**After this chapter you will understand:** (1) the difference between fast-mode and dictionary-mode property storage, (2) when to use `Map` instead of a plain object, (3) why defining methods on the prototype is more memory-efficient than per-instance closures.
+
 ## 1. Two ways to store properties
 
 Every object in V8 stores its named properties in one of two modes, and which mode it's in makes a large difference to how fast property access is.
@@ -102,6 +105,12 @@ delete slow.x;
 %DebugPrint(slow);   // note the shift toward dictionary/slow properties after delete
 ```
 
-## 10. Key takeaways
+## 10. Check your understanding
+
+1. What is the difference between in-object properties and the overflow backing store? Which is faster to access, and why?
+2. You are building a URL-shortening cache: `cache[shortCode] = longUrl` where `shortCode` comes from users. Should you use a plain object or a `Map`? Explain the trade-offs.
+3. Class `A` assigns `this.handle = () => {}` inside its constructor; class `B` defines `handle() {}` in the class body. Both have 10,000 instances. What is the memory difference, and why?
+
+## 11. Key takeaways
 
 Objects are fastest in **fast-property mode**, where their properties sit at fixed offsets described by a stable hidden class, split between quick in-object slots and an overflow backing store. The behaviors that push objects into slow **dictionary mode** — `delete`, conditional or late properties, and using objects as arbitrary-key dictionaries — should be kept away from hot data. Initialize a complete, consistently ordered shape in the constructor, avoid mutating prototypes, define methods on the prototype rather than per instance, and reach for `Map` when you genuinely need dynamic keys.

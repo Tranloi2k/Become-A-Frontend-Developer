@@ -2,6 +2,9 @@
 
 > How JavaScript decides which variable a name refers to across nested functions, and how closures keep variables alive long after the function that created them has returned.
 
+**Prerequisites:** `10-execution-context` (closures depend on the outer-environment link).  
+**After this chapter you will understand:** (1) what lexical scoping means and how it differs from dynamic scoping, (2) why closures capture *bindings* not values — the key to the `var`-loop puzzle, (3) how to prevent closures from creating memory leaks.
+
 ## 1. Lexical scope
 
 JavaScript uses **lexical scoping**, also called static scoping, and the word "lexical" is the key: where a variable can be accessed is determined by *where it is physically written in the source code*, not by where or how a function is later called. An inner function can see the variables of the functions that textually surround it, because that relationship is fixed at authoring time.
@@ -114,6 +117,12 @@ Don't avoid closures out of performance fear — V8 optimizes them well, and the
 
 The biggest one is believing a closure copies the variable's value at the moment it's created; it actually captures a reference to the binding, so the value it sees can change afterward — which is the whole `var`-loop lesson. Another is thinking an inner function closes over *all* of the outer function's variables; the engine only allocates a context for the variables that are genuinely captured. And while arrow functions and regular functions differ in how they treat `this` and `arguments`, they use the exact same closure mechanism for ordinary variables.
 
-## 10. Key takeaways
+## 10. Check your understanding
+
+1. Three `setTimeout(() => console.log(i), 0)` callbacks in a `var` loop all log `3`. Three in a `let` loop log `0`, `1`, `2`. Explain exactly why, in terms of bindings and closures.
+2. `function attach(el, data) { el.addEventListener('click', () => process(data)); }` — under what condition does this code cause a memory leak, and what are two ways to prevent it?
+3. Does an inner function close over *all* of its outer function's variables, or only the ones it uses? What is the practical implication for memory?
+
+## 11. Key takeaways
 
 JavaScript is **lexically scoped**, so variable lookup walks the **scope chain** outward through the environments that textually enclose the code. A **closure** is a function together with its captured lexical environment, and that environment persists after the outer function returns — which is what lets closures hold state. Closures capture **bindings, not values**, the detail behind the `var`-versus-`let` loop behavior. Captured variables are **heap-allocated**, so long-lived closures that hold large data are a real memory-leak risk; clean up listeners and timers, and capture only what you need.

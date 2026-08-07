@@ -2,6 +2,9 @@
 
 > The internal environment a piece of JavaScript runs inside — the concept that explains hoisting, the temporal dead zone, `this`, and the call stack all at once.
 
+**Prerequisites:** None — this chapter is self-contained and covers foundational runtime semantics.  
+**After this chapter you will understand:** (1) why `var` is `undefined` before its declaration while `let` throws a ReferenceError, (2) what rule determines the value of `this` for regular functions versus arrow functions, (3) how the call stack produces the stack traces you see in errors.
+
 ## 1. What an execution context is
 
 Whenever the engine runs a piece of code, it does so inside an **execution context**: an internal bookkeeping structure that tracks *where we are* in the program and *what is currently in scope*. You never touch an execution context directly — it's part of the engine's machinery — but almost every "why does JavaScript behave like this?" question about variables and `this` has its answer here.
@@ -87,6 +90,12 @@ Understanding execution contexts pays off because it unifies a set of behaviors 
 
 It's commonly said that `let` "is not hoisted." More precisely, it *is* hoisted — the binding is created during the creation phase — but it stays uninitialized until its declaration runs, which is what produces the TDZ. It's also tempting to think `this` refers to where a function was written; that's only true for arrow functions, while regular functions decide `this` from the call site. And the `var`-versus-`let` loop difference (each `let` iteration gets a fresh binding, while `var` shares one) is really a scoping detail that becomes vivid with closures, as the next chapter shows.
 
-## 10. Key takeaways
+## 10. Check your understanding
+
+1. `console.log(x); var x = 1;` logs `undefined`, while `console.log(y); let y = 1;` throws a ReferenceError. Both bindings exist before their declaration line — so what is the actual difference in how `var` and `let` are treated during the creation phase?
+2. What does `this` evaluate to inside a plain function called as `fn()` in strict mode? As a method called as `obj.fn()`? Explain the rule in one sentence.
+3. You see a stack trace with `processOrder → validateItem → checkStock`. In what order were those execution contexts pushed onto the call stack, and which one is currently on top?
+
+## 11. Key takeaways
 
 An execution context is the environment in which a chunk of code runs — global, function, or eval — and contexts are pushed and popped on the **call stack** in last-in-first-out order. Each context goes through a **creation phase** (where hoisting happens, the TDZ is set up, and `this` is determined) followed by an **execution phase** that runs the statements. `this` for ordinary functions depends on how they're called, while arrow functions capture it lexically. And the **outer environment** link that chains contexts together is exactly what forms the scope chain and makes closures possible.

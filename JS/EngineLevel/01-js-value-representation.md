@@ -2,6 +2,9 @@
 
 > How a JavaScript engine (primarily V8) stores values in memory, and why that single design decision ripples through everything else.
 
+**Prerequisites:** None — start here.  
+**After this chapter you will understand:** (1) why every JS value is stored as a single tagged machine word, (2) when a number requires a heap allocation versus staying in a register, (3) how V8 avoids copying strings on every concatenation.
+
 ## 1. The core problem
 
 JavaScript is dynamically typed. A single variable can hold a number on one line, a string on the next, and an object after that. There are no type declarations telling the engine "this slot is always a 32-bit integer." Yet the engine still has to give every variable a home in memory — a slot of some fixed size — because it cannot resize storage on every assignment.
@@ -120,6 +123,12 @@ Reading the output trains your intuition: you'll literally see when something is
 
 It's often said that "primitives live on the stack." That's only partly true. A small integer can live inline in a register or stack slot as a Smi, but a fractional number is a HeapNumber on the heap; the variable on the stack merely holds a pointer to it. Likewise, "strings copy on every `+`" is wrong in the common case — a ConsString defers the copy, and flattening only happens when the flat characters are actually needed. Finally, TypeScript types have nothing to do with any of this: types are erased before the code runs, so the engine optimizes based on the *runtime* values it observes, not on annotations.
 
-## 11. Key takeaways
+## 11. Check your understanding
+
+1. Why can Smi arithmetic (e.g., adding two small integers) skip heap allocation entirely, while adding two floating-point numbers often cannot?
+2. When V8 evaluates `let s = ""; for (...) s += "x"`, it does not copy characters on every `+`. What data structure defers the copy, and when does the actual copy occur?
+3. A loop accumulates `sum += 0.1` a million times. Why does this create significantly more GC pressure than a loop that sums integers?
+
+## 12. Key takeaways
 
 Every JavaScript value is one tagged machine word: either an inline **Smi** or a (possibly compressed) **pointer** to a heap object. Small integers are effectively free because they require no allocation, while other numbers become boxed **HeapNumbers** on the heap, which is why staying in integer range matters in hot loops. Strings, objects, symbols, BigInts, and oddballs all live on the heap with specialized layouts designed to avoid unnecessary copying. And the reason this chapter comes first is that almost every later optimization — hidden classes, inline caches, the JIT's type specialization — is ultimately about *keeping a value in one consistent representation* so the engine can generate tight, predictable code.

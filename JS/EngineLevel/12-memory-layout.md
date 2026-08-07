@@ -2,6 +2,9 @@
 
 > Where JavaScript data actually lives — the split between stack and heap, how V8 organizes its heap into generations, and what a "memory leak" even means in a garbage-collected language.
 
+**Prerequisites:** `01-js-value-representation` (Smis vs HeapObjects), `10-execution-context` (call stack).  
+**After this chapter you will understand:** (1) what data lives on the stack versus the heap and why, (2) how V8's generational heap spaces map to different collection strategies, (3) why "memory leaks" in GC languages are about reachability, not missing frees.
+
 ## 1. Stack versus heap
 
 The engine works with two fundamentally different regions of memory, and understanding the division explains a lot about lifetimes and performance.
@@ -81,6 +84,12 @@ node --inspect app.js                 # attach Chrome DevTools for the Memory ta
 
 Chrome and Node DevTools can take **heap snapshots** that show retained sizes and, importantly, the *retainer chains* — the references keeping an object alive — which is how you actually track down a leak. In Node, `process.memoryUsage()` reports `rss` (total process memory), `heapTotal` and `heapUsed` (the V8 object heap), and `external` (C++ memory bound to JS, like Buffers), giving you a quick programmatic read on where memory is going.
 
-## 9. Key takeaways
+## 9. Check your understanding
+
+1. `function f() { let n = 42; let obj = { x: 1 }; }` — where does `n` live, where does `obj` live, and what happens to each after `f` returns?
+2. Why is allocation in the young generation (bump-pointer allocation) so much faster than `malloc` in C?
+3. A Node server's `process.memoryUsage().heapUsed` keeps growing over 24 hours despite no obvious object retention in the code. What are the three most common root causes to investigate first?
+
+## 10. Key takeaways
 
 The **stack** holds call frames, primitive locals, and references, with a rigid per-call lifetime; the **heap** holds all dynamically-sized objects and lives until they become unreachable. V8's heap is **generational** — cheap, frequent young-generation scavenges plus occasional, more thorough old-generation collections — and allocation is fast bump-pointer work, with survivors getting promoted to old space. Memory "leaks" come from unintended **reachability**, not from missing manual frees, so the cures are dropping references, cleaning up listeners and timers, and using weak references for caches.

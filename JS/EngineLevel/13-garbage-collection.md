@@ -2,6 +2,9 @@
 
 > How V8 automatically figures out which memory is no longer needed and reclaims it — and why modern GC manages to do this without freezing your program.
 
+**Prerequisites:** `12-memory-layout` (heap layout and generational spaces).  
+**After this chapter you will understand:** (1) why reachability — not "done using it" — is the criterion for collection, (2) how the Scavenger's copying algorithm makes its cost proportional to *live* data, not dead data, (3) what Orinoco does to keep GC pauses short.
+
 ## 1. Reachability, not "done with it"
 
 The first thing to get right about garbage collection is what it actually measures. The collector frees objects that are **unreachable**, meaning there's no way to get to them by following references starting from a set of **roots** — the global object, the values on the current call stack, active closures, and various engine-internal handles. It does *not* free objects just because your program has logically "finished" with them. If a live root can still reach an object through some chain of references, that object stays alive, even if you never intend to use it again.
@@ -79,6 +82,12 @@ global.gc();   // force a collection — for benchmarks and leak tests only
 
 This is handy for measurements: force a collection, take a baseline, run your workload, force another collection, and compare — a simple way to check whether something is leaking.
 
-## 11. Key takeaways
+## 11. Check your understanding
+
+1. The Scavenger's cost is proportional to *live* data, not dead data. Walk through why: what does the algorithm actually do with dead objects, and what does it do with live ones?
+2. What is a write barrier, and why does generational GC require one? What problem would occur without it?
+3. You cache API responses with `const cache = new Map()` and the map grows without bound. Rewrite the cache using `WeakRef` to allow entries to be collected when memory is tight. What is the trade-off?
+
+## 12. Key takeaways
 
 Garbage collection frees **unreachable** objects, found by tracing from a set of **roots**, which is why leaks are about lingering reachability rather than missing frees. V8 is **generational**: a fast copying **Scavenger** handles the young generation where most objects die, while **Mark-Sweep-Compact** handles the long-lived old generation. **Orinoco** makes major GC incremental, concurrent, and parallel so main-thread pauses stay short. Use **`WeakMap`**, **`WeakRef`**, and `FinalizationRegistry` to avoid leaks without manual management, and the most practical performance lever you control is reducing the rate of allocation in hot code.

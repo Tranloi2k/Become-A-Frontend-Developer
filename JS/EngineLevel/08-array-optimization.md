@@ -2,6 +2,9 @@
 
 > How V8 represents arrays through "elements kinds," why packed integer arrays are the fastest thing going, and how a single careless line can permanently slow an array down.
 
+**Prerequisites:** `01-js-value-representation` (Smi and unboxed doubles), `05-hidden-class-and-shapes` (elements store is separate from properties).  
+**After this chapter you will understand:** (1) the elements kinds lattice and why transitions are one-way, (2) the specific operations that make an array holey or generic, (3) when TypedArrays are the right tool instead of regular arrays.
+
 ## 1. Arrays are objects, but their indices are special
 
 A JavaScript array is, technically, an object — but its indexed elements (`arr[0]`, `arr[1]`, …) are not stored as ordinary named properties. They live in a dedicated **elements backing store**, separate from any named properties the array might also have. This separation lets V8 treat the indexed part with specialized, compact representations rather than the general property machinery. And to choose the best representation, V8 tracks the *kind* of elements an array currently holds.
@@ -100,6 +103,12 @@ arr.push(1.5);
 
 Empty slots are not free placeholders — they create the HOLEY kind, which slows down every read of that array, so `arr[1000] = x` on a short array is more expensive than it looks. And setting `length = 0` does not "reset" an array back to a pristine packed-integer kind; the elements kind doesn't revert. Finally, TypedArrays aren't automatically faster for tiny arrays — for a handful of elements an ordinary `Array` can be perfectly fine, so reserve TypedArrays for genuinely large or performance-critical numeric data, and measure.
 
-## 11. Key takeaways
+## 11. Check your understanding
+
+1. `const a = [1, 2, 3]; a.push(1.5);` — what elements kind transition occurs? Is the resulting array still considered "fast"?
+2. `const b = new Array(1000); b[0] = 1; b[999] = 2;` — what elements kind does `b` have, and why does this matter for iteration performance?
+3. You are writing a function that applies a matrix multiplication over 1,000,000 `float64` values in a tight loop. Should you use `Array` or `Float64Array`? What are the concrete advantages of `Float64Array` in this scenario?
+
+## 12. Key takeaways
 
 Arrays carry an **elements kind** describing both their density (packed versus holey) and their value type (smi, double, or general), and packed integer or double arrays are dramatically faster than holey or generic ones. The transitions between kinds are **one-way** toward slower representations, so a single hole or type mix can permanently degrade an array. The common footguns are sparse indices, `delete`, `new Array(n)`, extending `length`, and mixing types. For heavy numeric data, skip the risk entirely and use a **TypedArray**.

@@ -2,6 +2,9 @@
 
 > The mechanism that makes a repeated `obj.x` fast by remembering, right at that spot in the code, where `x` was found last time.
 
+**Prerequisites:** `03-bytecode-interpreter-ignition` (ICs live in the feedback vector), `05-hidden-class-and-shapes` (ICs key off the hidden class).  
+**After this chapter you will understand:** (1) how an IC eliminates repeated property lookups, (2) what monomorphic / polymorphic / megamorphic mean and how each affects performance, (3) why funneling many object shapes through one hot function is expensive.
+
 ## 1. The idea
 
 Imagine a line of code like `obj.x` sitting inside a function that runs millions of times. In the vast majority of real programs, the `obj` flowing through that particular line tends to have the *same shape* over and over — it's the same kind of object each time. So doing a full property lookup (consult the hidden class, find `x`, compute its offset) on every single execution is wasteful, because the answer is almost always identical to last time.
@@ -86,6 +89,12 @@ This logs IC transitions, which are verbose but revealing — you'll see sites m
 
 The most common one is thinking the IC caches the *value* of `x`. It doesn't — it caches *where to find* `x` (the Map plus offset), so the value can change freely between calls while the cache stays valid. Another is assuming any two objects with the same JSON-looking shape will share an IC; they only share if they share a hidden class, which (per the previous chapter) depends on construction order. And it's worth repeating that megamorphic isn't inherently a bug — for cold or genuinely generic code it's perfectly acceptable; it only hurts when it lands in your innermost hot loop.
 
-## 9. Key takeaways
+## 9. Check your understanding
+
+1. An IC at a property-load site caches the "Map + offset" pair, not the property's value. Why is this distinction important — what can change freely without invalidating the cache?
+2. You write `function logValue(o) { return o.value; }` and call it with objects of 50 different shapes. What state does the IC reach, and how does that affect TurboFan's ability to specialize the function?
+3. Two objects `{ x: 1 }` and `{ x: 1, y: 2 }` are passed alternately to the same property-access site. Is the site monomorphic or polymorphic? Is this usually a performance problem in practice?
+
+## 10. Key takeaways
 
 An inline cache records, at each property-access or call site, the result of the lookup as a mapping from hidden class to location or target. Sites progress through states — **monomorphic** (best) to **polymorphic** to **megamorphic** (worst) — based on how many distinct shapes they observe, and this state feeds directly into TurboFan's speculative specialization and inlining. The practical upshot is that stable object shapes keep ICs monomorphic and your code fast, and that the fix for a slow megamorphic site is shape discipline upstream, not more conditional logic at the site itself.

@@ -2,6 +2,9 @@
 
 > V8's baseline tier: it turns the AST into compact bytecode, runs it, and quietly gathers the profiling data that makes everything faster later.
 
+**Prerequisites:** `02-parser-and-ast` (Ignition consumes the AST).  
+**After this chapter you will understand:** (1) why using an interpreter first is faster than compiling everything to machine code immediately, (2) what a feedback vector records and why it is critical for optimization, (3) how functions tier up to faster compilers and fall back on deoptimization.
+
 ## 1. Why an interpreter at all?
 
 It's tempting to assume the fastest engine would compile every function straight to optimized machine code. In practice that would be a terrible default. Generating optimized machine code is slow and produces a lot of code in memory, and the overwhelming majority of functions in a program either run only a handful of times or never run at all. Spending heavy compilation effort on code that barely executes is wasted work, and it would make startup sluggish and memory usage balloon.
@@ -95,6 +98,12 @@ Everything Ignition records becomes the raw material for optimization, so the qu
 
 "Interpreted means permanently slow" is wrong: Ignition is highly tuned, and any code that runs enough to matter quickly leaves the interpreter for compiled tiers. "Bytecode is just a debugging artifact" is also wrong — it is the primary execution form for cold code and the landing pad after every deoptimization. And no, adding TypeScript types does not make V8 faster; types are erased before execution, and the engine optimizes purely on the runtime values it observes.
 
-## 10. Key takeaways
+## 10. Check your understanding
+
+1. Why does V8 use an interpreter at all, rather than compiling every function directly to optimized machine code at startup?
+2. A property access `obj.x` has a feedback slot. What does that slot record, and how does TurboFan later use that information?
+3. You run `node --print-bytecode --print-bytecode-filter=add script.js`. What does the output tell you, and what would you look for to understand the function's type feedback?
+
+## 11. Key takeaways
 
 Ignition compiles the AST into compact, register-based bytecode and interprets it, serving as V8's cheap, fast-starting, low-memory baseline tier. Its accumulator-plus-registers design and shared bytecode handlers are what keep it lightweight. Most importantly, while it runs your code it fills in **feedback vectors** that record the types, shapes, and call targets actually seen — and that feedback is what makes the speculative optimizing compilers possible. Hot functions tier up through Sparkplug, Maglev, and TurboFan; when speculation fails, they tier back down to Ignition. If you want to see the real instructions, `--print-bytecode` shows you exactly what your functions compile to.

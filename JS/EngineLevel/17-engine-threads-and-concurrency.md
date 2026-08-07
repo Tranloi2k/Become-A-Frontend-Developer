@@ -2,6 +2,9 @@
 
 > "JavaScript is single-threaded" is true in a precise and limited sense — your code runs on one thread, but the engine and host quietly use many.
 
+**Prerequisites:** `14-event-loop-and-async-runtime` (the single-thread model).  
+**After this chapter you will understand:** (1) what "single-threaded" precisely means and what it does *not* say about background work, (2) how Workers enable real CPU parallelism and how they communicate, (3) when to use the event loop versus Workers versus `SharedArrayBuffer` for concurrent work.
+
 ## 1. What "single-threaded" actually means
 
 The phrase "JavaScript is single-threaded" gets repeated so often that it's worth pinning down exactly what it claims and what it doesn't. What's true is that *your* JavaScript executes on **one main thread** with **one call stack**: within a single agent (V8 calls it an isolate), no two pieces of your JavaScript ever run truly in parallel. This is actually a feature — it means you never have to worry about two threads mutating the same JavaScript object at the same time, so there are no data races on ordinary JS objects and no locks to manage.
@@ -76,6 +79,12 @@ for (let i = 0; i < 1e10; i++) sum += i;
 
 A few habits make concurrency work well in practice. Never block the main thread with long synchronous loops — offload them to a worker so the event loop keeps turning. Be mindful of message-passing cost, and use transferables or a `SharedArrayBuffer` when moving large data. In Node, tune `UV_THREADPOOL_SIZE` if you're doing a lot of concurrent file, crypto, or zlib work and the default of four is a bottleneck. And remember that workers have a real startup cost, so for frequent small tasks it's better to create a pool of workers and reuse them than to spawn a fresh one each time.
 
-## 10. Key takeaways
+## 10. Check your understanding
+
+1. "JavaScript is single-threaded." Name three categories of background work V8 does on other threads even while your code runs on the main thread.
+2. You want to send a 100 MB `ArrayBuffer` from the main thread to a Worker. Using `postMessage` with structured clone takes 200ms; using a transferable takes ~0ms. Explain the difference. What is the trade-off of using a transferable?
+3. Your Node server does heavy cryptographic hashing synchronously on every request, causing latency to spike. What tool or strategy fixes this, and why does it work?
+
+## 11. Key takeaways
 
 Your JavaScript runs on **one main thread**, but V8 uses background threads for **JIT compilation, garbage collection, and parsing**, and the host uses threads for **I/O and rendering** — so the process is far from single-threaded overall. True parallel JavaScript comes from **Workers**, which are separate isolates/agents that communicate by **message passing** rather than shared state. **SharedArrayBuffer plus Atomics** enables real shared-memory concurrency (requiring cross-origin isolation in browsers). And the guiding principle is to use the **event loop** for I/O concurrency and **workers** for CPU parallelism.

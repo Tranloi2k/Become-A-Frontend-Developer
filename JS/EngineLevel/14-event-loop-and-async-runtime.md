@@ -2,6 +2,9 @@
 
 > How a single-threaded language manages to handle timers, network requests, and file I/O all at once without ever blocking.
 
+**Prerequisites:** `10-execution-context` (the call stack is part of the model).  
+**After this chapter you will understand:** (1) why a Promise callback always runs before a `setTimeout` callback, (2) how `async`/`await` maps to promise microtasks under the hood, (3) why a long synchronous loop freezes the browser's rendering.
+
 ## 1. The core model
 
 JavaScript on the main thread runs on a **single thread** with a single **call stack**. That sounds limiting — how can one thread handle a network request, a timer, and user clicks simultaneously? The trick is that the JavaScript thread never *waits* for slow operations. When you start something slow (a timer, a fetch, a file read), the engine doesn't sit there blocking until it finishes. Instead, it hands the operation off to the **host environment** — the browser's Web APIs or Node's libuv — which performs the work elsewhere and, when it's done, places a **callback** into a queue. The **event loop** is the simple but crucial coordinator that takes callbacks off those queues and runs them, but only when the call stack is empty.
@@ -107,6 +110,12 @@ A few traps follow directly from how the loop works. **Microtask starvation** ha
 
 It's worth being precise about this, because it's a common misunderstanding: the single JavaScript thread does *not* perform the I/O itself. The host does it elsewhere. In the browser, Web APIs — the networking stack, timers, DOM event machinery — run outside the JS thread and queue callbacks when they complete. In Node, libuv provides both the event loop and a **thread pool** (four threads by default, configurable via `UV_THREADPOOL_SIZE`) used for file I/O, DNS, crypto, and compression, while network I/O typically uses the operating system's async mechanisms (epoll, kqueue, IOCP) rather than the pool. Either way, your JavaScript only runs the callback once the underlying work is finished — the waiting happens somewhere else.
 
-## 9. Key takeaways
+## 9. Check your understanding
+
+1. `setTimeout(() => console.log('A'), 0)` and `Promise.resolve().then(() => console.log('B'))` are queued at the same time. Which runs first, and exactly why?
+2. An `async` function hits `await somePromise`. Trace what happens to the function's execution: where does control go, when does the rest of the function resume, and on which queue does the continuation land?
+3. You have a loop that synchronously processes 500,000 array items. The page is completely unresponsive during that time. What is the mechanism causing the freeze, and what are two strategies to fix it?
+
+## 10. Key takeaways
 
 JavaScript is single-threaded, and the **event loop** runs queued callbacks whenever the call stack is empty. **Microtasks** (promises and `await` continuations) drain completely before the next **macrotask** (timers and I/O) and before rendering, which is the rule that lets you predict ordering. `async`/`await` is just promises and microtask continuations — it never blocks the thread. Node organizes its work into ordered **libuv phases**, with `nextTick` and microtasks running between them. And the golden rules are: don't block the loop with long synchronous work, and don't starve it with runaway microtasks — offload heavy CPU work to workers instead.

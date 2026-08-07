@@ -2,6 +2,9 @@
 
 > How JavaScript code gets split across files, linked together, and loaded — and why ES Modules behave differently from the older CommonJS in ways that actually matter.
 
+**Prerequisites:** `14-event-loop-and-async-runtime` (dynamic import returns a Promise).  
+**After this chapter you will understand:** (1) why ESM imports are live bindings while CommonJS exports are value copies, (2) the three loading phases (construction → linking → evaluation) and why linking before evaluation matters, (3) when to choose dynamic `import()` over a static `import`.
+
 ## 1. Why modules exist
 
 Before modules, JavaScript had no built-in way to split code across files with any kind of isolation. Everything a script declared at the top level became global, so two files could clobber each other's variables, and the order in which you included `<script>` tags became load-bearing and fragile. Modules fix this by giving each file three things: **encapsulation** (a private top-level scope, so your variables don't leak), **explicit dependencies** (you declare what you import and export instead of relying on global side effects), and **reusability** (a module is a self-contained unit you can pull in wherever you need it). Because the language originally lacked this, the community invented a series of patterns and formats to fill the gap, and understanding that history explains why there are several module systems in the wild today.
@@ -101,6 +104,12 @@ Browsers support ESM natively through `<script type="module">`, which is deferre
 
 It's worth being clear about the division of labor, because it mirrors the engine-versus-host theme from chapter `15`. The engine (V8) implements the Module Record machinery — parsing, linking, and evaluation per the spec — along with dynamic `import()` and `import.meta`. But the **host** (browser or Node) supplies **module resolution**, meaning the rules for how a specifier like `"./math.js"` or `"lodash"` maps to an actual file or URL, and it does the **fetching**. This is why resolution rules differ between browsers and Node even though the linking and evaluation semantics are standardized and identical.
 
-## 10. Key takeaways
+## 10. Check your understanding
+
+1. `counter.js` exports `let count = 0` and a `increment()` function. You import `count` in `main.js`, call `increment()`, then log `count`. Does `main.js` see the updated value? Would the answer be different if this were CommonJS? Why?
+2. Walk through what happens in each of the three ESM loading phases (construction → linking → evaluation) for a two-file project where `main.js` imports from `util.js`.
+3. You are building a dashboard where each route's code should only be loaded when the user navigates to it. Which import syntax do you use, and what does it return?
+
+## 11. Key takeaways
 
 **ESM** is the language standard: static `import`/`export`, **live bindings**, single evaluation, and tree-shakeable structure. Loading proceeds through **construction → instantiation/linking → evaluation** over a module graph, and the fact that linking happens before evaluation is what makes live bindings and well-defined circular-dependency behavior possible. **Dynamic `import()`** enables lazy loading and code splitting. **CommonJS**, Node's legacy system, is synchronous and copies values, differing from ESM in bindings, timing, and analyzability. And the engine handles linking and evaluation while the **host** handles specifier resolution and fetching.
